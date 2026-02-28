@@ -1,0 +1,3658 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gloomhaven Helper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      :root { --accent: #c2a35d; --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0; --border: #333; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; justify-content: center; overflow-x: hidden; }
+#app { width: 100%; max-width: 500px; background: #1a1a1a; min-height: 100vh; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+.screen { padding: 40px 0; text-align: center; width: 100%; box-sizing: border-box; }
+
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+.hidden { display: none !important; }
+.modal-full { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000; background: var(--bg); display: none; flex-direction: column; align-items: center; overflow-y: auto; }
+.modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2000; background: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; }
+.modal-content { background: #252525; padding: 30px; border-radius: 12px; max-width: 320px; width: 90%; text-align: center; border: 2px solid var(--accent); position: relative; }
+#modal-global-alert, #modal-global-confirm { z-index: 3000 !important; }
+.modal:not(.hidden) { display: flex !important; }
+.modal-full:not(.hidden) { display: flex !important; }
+#screen-home { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 10; }
+#selected-party-display { flex: 1; border: 2px solid var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--card-bg); cursor: pointer; color: var(--text); font-weight: bold; position: relative; z-index: 20; }
+#party-list { list-style: none; padding: 0; margin: 0; position: absolute; top: 55px; left: 0; width: 222px; background: #252525; border: 2px solid var(--accent); border-radius: 8px; z-index: 100 !important; max-height: 200px; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.7); }
+#party-list li { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; text-align: center; color: #fff; transition: 0.2s; }
+button { cursor: pointer; border: none; transition: 0.2s; border-radius: 4px; color: white; }
+.btn-confirm { background: var(--accent); color: black; padding: 12px; font-weight: bold; border-radius: 8px; width: 240px; position: relative; z-index: 20; }
+.home-btn-add { width: 50px; height: 50px; padding: 0; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; background: var(--accent); color: black; font-weight: bold; border-radius: 8px; position: relative; z-index: 25; cursor: pointer; }
+#btn-party-enter, #btn-party-delete { flex: 1; height: 45px; font-weight: bold; border-radius: 8px; cursor: pointer; position: relative; z-index: 20; }
+#btn-party-delete { background: #444; color: #ff4444; border: 1px solid #ff4444; }
+
+        /* 캐릭터 카드 스타일 */
+        .job-list-vertical { display: flex; flex-direction: column; gap: 12px; padding: 0 15px; }
+        .job-card-v { position: relative; height: 100px; background: #252525; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: 0.4s; cursor: pointer; display: flex; }
+        .job-card-v:hover { height: 170px; border-color: var(--accent); }
+        .job-character-img { height: 100%; width: 100%; object-fit: cover; transition: 0.4s; }
+        .job-card-v:hover .job-character-img { width: 45%; }
+        .card-overlay { position: absolute; top: 0; right: 0; width: 100%; height: 100%; display: flex; justify-content: flex-end; background: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.8) 80%); }
+        .job-info-row { width: 55%; display: flex; flex-direction: column; align-items: flex-end; padding: 15px 20px; }
+        .input-area { display: none; position: absolute; right: 20px; bottom: 15px; width: calc(100% - 230px); flex-direction: column; align-items: flex-end; }
+	.job-card-v:hover .input-area { display: flex; }
+	.underline-input { background: none; border: none; border-bottom: 2px solid var(--accent); width: 100%; color: white; text-align: right; margin-bottom: 8px; outline: none; font-size: 0.9rem; }
+	.btn-small-confirm { background: var(--accent); color: black; padding: 3px 10px; font-size: 0.7rem; font-weight: bold; border-radius: 4px; width: fit-content; cursor: pointer; }
+        .occupied-tag { font-size: 0.7rem; background: var(--accent); color: black; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+	
+/* Detailed Sheet - Layout & Components */
+.modal-full { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #121212; z-index: 1000; overflow-y: auto; display: none; flex-direction: column; align-items: center; }
+.modal-full[style*="display: flex"] { display: flex !important; }
+.sheet-header { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; height: 55px; background: #1a1a1a; border-bottom: 2px solid var(--accent); flex-shrink: 0; width: 100%; max-width: 500px; box-sizing: border-box; }
+.header-left { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+#sheet-job-name { font-size: 1.1rem; font-weight: bold; color: var(--accent); }
+#sheet-lv-num-wrap { font-size: 0.9rem; color: var(--accent); font-weight: bold; }
+.header-right-group { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+.name-txt { font-size: 0.9rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+.header-icons-wrap { display: flex; align-items: center; gap: 4px; }
+.header-icons-wrap button { background: #1a1a1a; border: 1px solid #333; color: #888; font-size: 1rem; cursor: pointer; padding: 4px 6px; border-radius: 4px; display: flex; align-items: center; }
+.info-controls-section { flex: 0 0 50% !important; width: 50% !important; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; }
+.party-status-bar { cursor: pointer; background: rgba(255,255,255,0.05); border: 1px solid #333; border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; box-sizing: border-box; }
+.status-lv-box { display: flex; align-items: center; gap: 2px; flex-shrink: 1; min-width: 0; }
+.status-lv-box .lv-label, .status-lv-box b { color: #888; font-size: 0.6rem; font-weight: normal; }
+.status-divider { width: 1px; height: 12px; background: var(--accent); opacity: 0.5; margin: 0 2px; flex-shrink: 0; }
+.status-check-txt { font-size: 0.55rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-item { width: 100%; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat-label { font-size: 0.6rem; color: #666; font-weight: bold; }
+.exp-bar-wrap { display: flex; align-items: center; gap: 4px; width: 100%; margin-top: 1px; }
+.exp-bar-bg { flex: 1; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+.exp-bar-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }
+.btn-group-mini { display: flex; gap: 4px; margin-top: 5px; width: 100%; }
+.btn-mini { flex: 1; height: 32px; font-size: 0.7rem; background: #222; color: white; border: 1px solid #444; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.sheet-menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; max-width: 500px; gap: 1px; background: #333; border-top: 2px solid var(--accent); }
+.menu-tab { height: 50px; background: #1a1a1a; color: #eee; border: none; font-size: 0.9rem; font-weight: bold; cursor: pointer; }
+.next-lv-txt { font-size: 0.7rem; color: var(--accent); font-weight: bold; white-space: nowrap; margin-left: 5px; }
+@media (max-width: 480px) { .sheet-main-info { flex-direction: column; } .job-image-area, .stats-area { width: 100%; flex: none; border-left: none; } .job-image-area { height: auto; min-height: 300px; } }
+ 
+.sheet-main-info { display: flex !important; flex-direction: row !important; width: 100% !important; max-width: 100% !important; height: auto; background: #000; box-sizing: border-box; overflow: hidden; }
+.job-image-area { flex: 0 0 50% !important; width: 50% !important; max-width: 50% !important; min-width: 50% !important; display: flex; align-items: flex-start; justify-content: center; background: #000; overflow: hidden; }
+#sheet-character-portrait { width: 100% !important; height: auto !important; display: block; object-fit: contain; }
+.stats-area { flex: 0 0 50% !important; width: 50% !important; max-width: 50% !important; min-width: 50% !important; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #111; box-sizing: border-box; border-left: 1px solid #333; overflow: hidden; }
+.exp-line, .gold-line { display: flex; align-items: center; gap: 4px; width: 100% !important; max-width: 100% !important; box-sizing: border-box; }
+#modal-char-sheet .underline-input { flex: 1 !important; width: 0 !important; min-width: 0 !important; font-size: 0.85rem !important; height: 26px !important; text-align: center; background: #1a1a1a; border: none; border-bottom: 1px solid #333; color: white; outline: none; }
+
+
+#modal-name-edit .underline-input { background: transparent !important; border: none; border-bottom: 2px solid var(--accent); color: white; font-size: 1.5rem !important; text-align: center; width: 100%; padding: 10px 0; outline: none; margin-bottom: 25px; }
+.modal-btn-group { display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 10px; }
+.modal-btn-group button { flex: 1; height: 45px; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; }
+.btn-save-gold { background: var(--accent) !important; color: black !important; }
+.btn-cancel-gray { background: #444 !important; color: white !important; }
+.btn-reset-red { background: #ff4444 !important; color: white !important; }
+
+/* --- Scenario Setting Modal Detail --- */
+.sc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.sc-title { margin: 0; color: var(--accent); font-size: 1rem; letter-spacing: 1px; font-weight: bold; }
+.sc-avg-info-box { display: flex; background: #1a1a1a; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.75rem; color: #888; border: 1px solid #333; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
+.sc-avg-item { flex: 1; text-align: center; }
+.sc-avg-val { display: block; color: #eee; font-size: 1rem; margin-top: 2px; }
+.sc-base-val { display: block; color: var(--accent); font-size: 1rem; margin-top: 2px; font-weight: bold; }
+.sc-divider { width: 1px; background: #444; margin: 0 15px; }
+.sc-diff-row { display: flex; gap: 5px; margin-bottom: 20px; background: #111; padding: 5px; border-radius: 10px; border: 1px solid #333; }
+.sc-diff-btn { flex: 1; border: none; background: transparent; color: #666; padding: 10px 0; font-size: 0.7rem; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+.sc-diff-btn.active { background: var(--accent); color: #000; font-weight: bold; box-shadow: 0 0 12px rgba(194, 163, 93, 0.5); }
+.sc-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: rgba(0, 0, 0, 0.2); padding: 15px; border-radius: 10px; border: 1px solid #333; }
+.sc-result-item { display: flex; flex-direction: column; align-items: center; padding: 5px 0; }
+.sc-result-item.border-r { border-right: 1px solid #333; }
+.sc-result-item.border-t { border-top: 1px solid #333; padding-top: 10px; }
+.sc-result-label { font-size: 0.65rem; color: #777; margin-bottom: 4px; }
+.sc-result-val { font-size: 1.1rem; font-weight: bold; }
+.sc-val-monster { color: var(--accent); }
+.sc-val-gold { color: #ffd700; }
+.sc-val-trap { color: #ff5555; }
+.sc-val-exp { color: #44ff44; }
+
+#sh-popup, #bg-popup, .sh-popup-overlay, .bg-popup-overlay { display: none !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; opacity: 0; transition: opacity 0.2s ease; justify-content: center; align-items: center; }
+#sh-popup.active, #bg-popup.active, .sh-popup-overlay.active, .bg-popup-overlay.active { display: flex !important; opacity: 1 !important; }
+.sh-popup-content, .bg-popup-content { position: relative; width: 95%; max-width: 480px; height: 85vh; background: #1a1a1a; border: 2px solid var(--accent); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; z-index: 2001; box-shadow: 0 0 25px rgba(0,0,0,0.7); }
+.sh-header, .bg-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #333; flex-shrink: 0; }
+.sh-title { color: var(--accent); font-weight: bold; font-size: 1.1rem; }
+.sh-title small { color: #ffd700; margin-left: 8px; font-size: 0.9rem; font-weight: normal; }
+.sh-close-x { background: none; border: none; color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; }
+.sh-category-bar, .bg-category-bar { display: flex; overflow-x: auto; background: #222; padding: 10px; gap: 8px; border-bottom: 1px solid #111; flex-shrink: 0; scrollbar-width: none; }
+.sh-category-bar::-webkit-scrollbar { display: none; }
+.sh-category-btn, .bg-category-btn { background: #333; color: #eee; border: 1px solid #444; padding: 6px 15px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; transition: 0.2s; }
+.sh-category-btn.active, .bg-category-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
+.sh-scroll-area, .bg-scroll-area { flex: 1; overflow-y: auto; padding: 10px 0; background: #111; scroll-behavior: smooth; }
+.sh-item-card { display: flex; align-items: center; justify-content: space-between; background: #252525; margin: 8px 12px; padding: 12px; border-radius: 10px; border: 1px solid #333; transition: 0.2s; position: relative; overflow: hidden; z-index: 2005; }
+.sh-item-card:hover { border-color: var(--accent); background: #2a2a2a; }
+.sh-item-info { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; pointer-events: none; }
+.sh-item-no { font-size: 0.65rem; color: var(--accent); font-weight: bold; opacity: 0.8; }
+.sh-item-name { font-size: 0.9rem; color: #eee; font-weight: bold; }
+.sh-item-type { font-size: 0.7rem; color: #666; background: #1a1a1a; padding: 1px 6px; border-radius: 4px; margin-top: 2px; }
+.sh-item-buy-zone { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 4px; min-width: 95px; text-align: right; }
+.sh-item-price { font-size: 0.9rem; font-weight: bold; color: #ffd700; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); }
+.sh-item-stock { font-size: 0.75rem; color: #ccc; background: none; padding: 0; border-radius: 0; font-family: inherit; }
+.sh-item-stock b { color: var(--accent); }
+.sh-item-soldout { font-size: 0.9rem; font-weight: bold; color: #ff4444; }
+.sh-sold-out { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; color: #ff4444; font-weight: bold; font-size: 0.8rem; letter-spacing: 2px; transform: rotate(-5deg); pointer-events: none; border: 1px solid rgba(255,68,68,0.3); z-index: 2010; }
+.sh-item-owner-label { font-size: 0.75rem; color: #bbb; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-footer, .bg-footer { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #222; border-top: 1px solid #333; flex-shrink: 0; }
+.sh-unlock-zone { display: flex; gap: 5px; align-items: center; }
+.sh-footer-input { background: #111; border: 1px solid #444; color: #fff; padding: 5px; width: 50px; border-radius: 4px; text-align: center; font-size: 0.85rem; }
+.sh-btn-confirm { background: #444; color: #fff; border: 1px solid #555; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+.sh-btn-confirm:hover { background: var(--accent); color: #000; }
+
+.modal, .modal-backdrop { z-index: 3000 !important; }
+#modal-alert { z-index: 3001 !important; }
+
+
+.bag-item-card { display: flex; align-items: center; justify-content: space-between; background: #252525; margin: 8px 12px; padding: 12px; border-radius: 10px; border: 1px solid #333; transition: 0.2s; position: relative; overflow: hidden; }
+.bag-item-card:hover { border-color: var(--accent); background: #2a2a2a; }
+.bag-item-left { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; flex-grow: 1; pointer-events: none; }
+.bag-item-header { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.bag-item-id { font-size: 0.65rem; color: var(--accent); font-weight: bold; opacity: 0.8; }
+.bag-item-name { font-size: 0.9rem; color: #eee; font-weight: bold; }
+.bag-item-category { font-size: 0.7rem; color: #666; background: #1a1a1a; padding: 1px 6px; border-radius: 4px; margin-top: 2px; width: fit-content; }
+.bag-item-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 4px; min-width: 95px; text-align: right; }
+.btn-bag-remove { background: none; border: none; color: #ff4444; font-size: 1.5rem; cursor: pointer; line-height: 0.8; padding: 0; margin-bottom: 2px; }
+.bag-item-sell-price { font-size: 0.9rem; font-weight: bold; color: #ffd700; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); margin: 0; }
+.btn-bag-trade { background: rgba(77, 255, 140, 0.15); color: #4dff8c; border: 1px solid rgba(77, 255, 140, 0.4); border-radius: 4px; padding: 2px 10px; font-size: 0.75rem; cursor: pointer; transition: 0.2s; margin-top: 4px; }
+.btn-bag-trade:hover { background: #4dff8c; color: #111111; }
+.btn-icon-switch { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255, 215, 0, 0.1); border: 2px solid rgba(255, 215, 0, 0.4); border-radius: 50%; cursor: pointer; font-size: 1.3rem; transition: 0.2s; padding: 0; line-height: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.4); outline: none; }
+.btn-icon-switch:hover { background: #ffd700; border-color: #ffd700; transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
+.btn-icon-switch:active { transform: scale(0.95); }
+ 
+.badge-job { padding: 1px 5px; border-radius: 3px; font-size: 0.7rem; font-weight: bold; color: white; margin-left: 2px; display: inline-block; }
+.badge-적위병 { background-color: #e74c3c; } 
+.badge-도끼투척수 { background-color: #27ae60; } 
+.badge-철거전문가 { background-color: #f39c12; } 
+.badge-공허감시자 { background-color: #8e44ad; } 
+
+
+#popup-perks { display: none !important; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2500; opacity: 0; transition: opacity 0.2s ease; justify-content: center; align-items: center; }
+#popup-perks.active { display: flex !important; opacity: 1 !important; }
+.pk-popup-content { position: relative; width: 95%; max-width: 480px; height: 85vh; background: #1a1a1a; border: 2px solid var(--accent); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 25px rgba(0,0,0,0.7); }
+.pk-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #333; flex-shrink: 0; }
+.pk-header-title { color: var(--accent); font-weight: bold; font-size: 1.1rem; }
+.pk-close-btn { background: none; border: none; color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; }
+.pk-scroll-area { flex: 1; overflow-y: auto; padding: 15px; background: #111; }
+.pk-point-control { display: flex; justify-content: space-between; align-items: center; background: #2a2a2a; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--accent); }
+.pk-stepper { display: flex; align-items: center; gap: 15px; }
+.pk-stepper button { width: 30px !important; height: 30px !important; background: var(--accent) !important; color: black !important; font-weight: bold !important; font-size: 1.2rem; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#display-perk-points { color: var(--accent); font-weight: bold; font-size: 1.1rem; }
+.pk-battle-goal-section { background: #222; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333; }
+.pk-sub-label { font-size: 0.8rem; color: #888; display: block; margin-bottom: 8px; }
+.pk-battle-goal-boxes { display: flex; gap: 10px; justify-content: center; }
+.pk-bg-box { width: 24px; height: 24px; border: 2px solid #555; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #222; transition: all 0.2s; font-weight: bold; color: var(--accent); }
+.pk-bg-box.checked { border-color: var(--accent); background: #333; box-shadow: inset 0 0 5px var(--accent); }
+.pk-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #333; }
+.pk-check-container { display: flex; gap: 4px; flex-shrink: 0; padding-top: 2px; }
+.pk-check { width: 18px; height: 18px; border: 1px solid var(--accent); border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.pk-check.checked { background: var(--accent); position: relative; }
+.pk-check.checked::after { content: '✔'; font-size: 12px; color: black; font-weight: bold; }
+.pk-txt { font-size: 0.85rem; line-height: 1.4; color: #ccc; flex: 1; }
+.pk-txt .icon { display: inline-block; padding: 1px 4px; margin: 0 2px; font-size: 0.75rem; border-radius: 3px; font-weight: bold; color: white; vertical-align: middle; }
+.pk-txt .icon.status { background-color: #A29BFE; }
+.pk-txt .icon.poison { background-color: #819e7a; }
+.pk-txt .icon.wound { background-color: #e67e22; }
+.pk-txt .icon.fire { background-color: #E74C3C; }
+.pk-txt .icon.ice { background-color: #3498db; }
+.pk-txt .icon.air { background-color: #74b9ff; }
+.pk-txt .icon.earth { background-color: #795548; }
+.pk-txt .icon.light { background-color: #f1c40f; color: black; }
+.pk-txt .icon.dark { background-color: #2c3e50; }
+.pk-txt .icon.curse { background-color: #4b4b4b; color: #a29bfe; }
+.pk-txt .icon.immob { background-color: #4b4b4b; color: #e74c3c; }
+.pk-txt .icon.heal { background-color: #27ae60; }
+.pk-txt .icon.stun { background-color: #FFFAFA; color: blue; }
+.pk-txt .icon.shield { background: none; padding: 0; font-size: 0.9rem; }
+
+.sr-popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2500; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s ease; }
+.sr-popup-overlay.active { display: flex !important; opacity: 1 !important; }
+.sr-popup-content { position: relative; width: 95%; max-width: 480px; height: 85vh; background: #1a1a1a; border: 2px solid var(--accent); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 25px rgba(0,0,0,0.7); }
+.sr-pp-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #333; flex-shrink: 0; }
+.sr-pp-title { color: var(--accent); font-weight: bold; font-size: 1.1rem; }
+.sr-pp-close { background: none; border: none; color: #888; font-size: 1.8rem; cursor: pointer; line-height: 1; }
+.sr-pp-scroll-area { flex: 1; overflow-y: auto; padding: 10px 0; background: #111; scroll-behavior: smooth; }
+.sr-footer-zone { display: flex; justify-content: center; padding: 12px; background: #222; border-top: 1px solid #333; }
+.sr-btn-close-main { background: #444; color: #fff; border: 1px solid #555; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+.sr-btn-close-main:hover { background: var(--accent); color: #000; }
+.sr-card { display: flex; align-items: center; justify-content: space-between; background: #252525; margin: 8px 12px; padding: 12px 18px; border-radius: 10px; border: 1px solid #333; transition: 0.2s; cursor: pointer; position: relative; overflow: hidden; height: auto; }
+.sr-card:hover { border-color: var(--accent); background: #2a2a2a; transform: translateY(-1px); }
+.sr-card.completed { border-left: 5px solid #2ecc71; background: linear-gradient(90deg, #1e2d24, #1a1a1a); }
+.sr-card.locked { opacity: 0.4; background: #151515; cursor: not-allowed; filter: grayscale(1); }
+.sr-info-zone { display: flex; flex-direction: column; gap: 4px; flex: 1; pointer-events: none; }
+.sr-title-row { display: flex; align-items: center; gap: 8px; }
+.sr-no { font-size: 0.65rem; color: var(--accent); font-weight: bold; background: rgba(255,184,77,0.1); padding: 2px 5px; border-radius: 4px; }
+.sr-title { font-size: 0.95rem; color: #eee; font-weight: bold; }
+.sr-reward-preview { font-size: 0.75rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; transition: 0.3s; height: 1rem; }
+.sr-reward-preview.hide-reward { opacity: 0; visibility: hidden; }
+.sr-reward-preview.show-reward { opacity: 1; visibility: visible; color: #ffd700; font-weight: bold; text-shadow: 0 0 5px rgba(255,215,0,0.3); }
+.sr-status-zone { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.sr-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; border: 1px solid transparent; letter-spacing: 0.5px; order: 2; }
+.sr-badge.ready { color: #5dade2; border-color: #5dade2; background: rgba(93,173,226,0.1); }
+.sr-badge.done { color: #2ecc71; border-color: #2ecc71; background: rgba(46,204,113,0.1); }
+.sr-btn-treasure { order: 1; position: relative; background: #333; border: 1px solid #555; border-radius: 6px; padding: 6px; cursor: pointer; font-size: 1.1rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+.sr-btn-treasure:hover { border-color: #ffd700; background: #444; }
+.sr-btn-treasure.has-pending::after { content: ''; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; border: 2px solid #252525; box-shadow: 0 0 5px rgba(255,0,0,0.5); }
+.modal-global-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; }
+.modal-global-overlay.active { display: flex !important; }
+.modal-global-content { background: #1a1a1a; border: 2px solid var(--accent); border-radius: 12px; width: 90%; max-width: 400px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+.modal-global-header { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #333; background: #222; }
+#treasure-title { color: var(--accent); font-weight: bold; font-size: 1rem; }
+.modal-close-btn { background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; }
+.treasure-mgr-body { padding: 15px; max-height: 50vh; overflow-y: auto; background: #111; }
+.treasure-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #333; }
+.ts-info { display: flex; flex-direction: column; gap: 4px; }
+.ts-id { font-size: 0.75rem; color: var(--accent); font-weight: bold; }
+.ts-content { font-size: 0.9rem; color: #eee; }
+.ts-owner-select { background: #1a1a1a; color: #fff; border: 1px solid #555; padding: 6px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; outline: none; }
+.ts-owner-select:focus { border-color: var(--accent); }
+.modal-global-footer { padding: 12px; display: flex; justify-content: flex-end; background: #222; border-top: 1px solid #333; }
+.btn-confirm { background: var(--accent); color: #000; border: none; padding: 8px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.btn-confirm:hover { filter: brightness(1.2); }
+.treasure-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 12px 18px; margin: 8px 12px; border-radius: 10px; border: 1px solid #333; transition: all 0.3s ease; position: relative; overflow: hidden; box-sizing: border-box; }
+.treasure-item:hover { border-color: var(--accent); background: #2a2a2a; transform: translateY(-1px); }
+.treasure-item.assigned { border-left: 5px solid #2ecc71 !important; background: linear-gradient(90deg, #1e2d24 0%, #1a1a1a 100%) !important; border-top-color: #333; border-right-color: #333; border-bottom-color: #333; }
+.ts-info { display: flex; flex-direction: column; gap: 4px; flex: 1; pointer-events: none; }
+.ts-id { font-size: 0.65rem; color: var(--accent); font-weight: bold; background: rgba(255,184,77,0.1); padding: 2px 5px; border-radius: 4px; align-self: flex-start; transition: 0.3s; }
+.treasure-item.assigned .ts-id { color: #2ecc71 !important; background: rgba(46,204,113,0.1) !important; }
+.ts-content { font-size: 0.95rem; color: #eee; font-weight: bold; transition: 0.3s; margin-top: 2px; }
+.treasure-item.assigned .ts-content { color: #ffffff !important; text-shadow: 0 0 8px rgba(46,204,113,0.2); }
+.ts-owner-select { background: #333; color: white; border: 1px solid #555; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; outline: none; transition: 0.2s; position: relative; z-index: 1; }
+.treasure-item.assigned .ts-owner-select { border-color: #2ecc71; background: #222; }
+.sr-btn-treasure { opacity: 1; transition: transform 0.2s; position: relative; background: none; border: none; cursor: pointer; }
+.sr-btn-treasure:hover { transform: scale(1.2); }
+
+/* 도시이벤트 */
+.ce-popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 2500; justify-content: center; align-items: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.2s ease; }
+.ce-popup-overlay.active { display: flex !important; opacity: 1 !important; }
+.ce-popup-content { background: #1a1a1a; width: 95%; max-width: 480px; height: 85vh; border-radius: 12px; border: 2px solid var(--accent); display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 0 20px rgba(184, 134, 11, 0.3); }
+.ce-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #222; border-bottom: 1px solid #333; }
+.ce-title { color: var(--accent); font-weight: bold; font-size: 1.1rem; }
+.ce-category-bar { display: flex; justify-content: space-around; background: #252525; padding: 10px; border-bottom: 1px solid #333; font-size: 0.85rem; color: #888; }
+.ce-scroll-area { flex: 1; overflow-y: auto; padding: 15px; background: #151515; }
+.ce-deck-section { background: #222; border-radius: 8px; padding: 12px; margin-bottom: 15px; border-left: 4px solid #444; }
+.ce-section-title { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; }
+.ce-card-active { background: #ffd700; color: #000; border: 1px solid #b8860b; }
+.ce-card-removed { background: #c0392b; color: #fff; border: 1px solid #7b1d12; }
+.ce-card-locked { background: #333; color: #777; border: 1px solid #444; }
+.ce-log-card { background: #1d1d1d; border: 1px solid #333; padding: 10px; border-radius: 6px; margin-bottom: 8px; position: relative; border-left: 4px solid var(--accent); }
+.ce-log-header { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px; color: #fff; }
+.ce-btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.ce-btn-remove { background: #c0392b; }
+.ce-btn-bottom { background: #2980b9; }
+.ce-footer { padding: 12px; background: #222; border-top: 1px solid #333; }
+
+.ce-footer-input { background: #111; color: #fff; border: 1px solid #444; border-radius: 6px; height: 45px; padding: 0 12px; font-size: 0.95rem; outline: none; box-sizing: border-box; }
+.ce-footer-input:focus { border-color: var(--accent); background: #1a1a1a; }
+.ce-btn-action { height: 45px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; font-size: 0.8rem; color: #fff; transition: filter 0.2s; }
+.ce-btn-action:active { filter: brightness(1.3); transform: scale(0.98); }
+.ce-log-mini-zone { background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #252525; }
+
+.ce-card-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; margin: 2px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: transform 0.1s; font-family: 'monospace'; }
+.ce-card-badge:active { transform: scale(0.9); }
+
+.hidden { display: none !important; }
+.modal-full { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #121212; z-index: 1000; overflow-y: auto; display: none; flex-direction: column; align-items: center; }
+.modal-full.active, .modal-full[style*="display: flex"], .modal-full:not(.hidden) { display: flex !important; }
+#modal-char-sheet .sheet-header, #modal-char-sheet .sheet-main-info, #modal-char-sheet .sheet-menu-grid { width: 100% !important; max-width: 500px !important; box-sizing: border-box; flex-shrink: 0; }
+.sheet-main-info { display: flex !important; flex-direction: row !important; height: auto; background: #000; overflow: hidden; }
+.job-image-area { flex: 0 0 50% !important; width: 50% !important; max-width: 50% !important; min-width: 50% !important; display: flex; align-items: flex-start; justify-content: center; background: #000; overflow: hidden; }
+.stats-area { flex: 0 0 50% !important; width: 50% !important; max-width: 50% !important; min-width: 50% !important; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #111; box-sizing: border-box; border-left: 1px solid #333; overflow: hidden; }
+.exp-line, .gold-line { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100% !important; box-sizing: border-box; overflow: hidden; }
+#modal-char-sheet .underline-input { flex: 0 0 65px !important; width: 65px !important; min-width: 65px !important; font-size: 0.85rem !important; height: 26px !important; text-align: center; background: #1a1a1a; border: none; border-bottom: 1px solid #333; color: white; outline: none; margin: 0; }
+.exp-bar-wrap { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
+.exp-bar-bg { flex: 1; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+.next-lv-txt { font-size: 0.65rem; color: var(--accent); font-weight: bold; white-space: nowrap; flex-shrink: 0; }
+.stat-label { font-size: 0.65rem; color: #666; font-weight: bold; flex-shrink: 0; min-width: 35px; }
+.btn-group-mini { display: flex; gap: 4px; margin-top: 5px; width: 100%; flex-shrink: 0; }
+.btn-mini { flex: 1; height: 32px; font-size: 0.7rem; background: #222; color: white; border: 1px solid #444; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.sheet-menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #333; border-top: 2px solid var(--accent); }
+.sr-reward-preview { font-size: 0.75rem; color: #888; overflow: hidden; transition: 0.3s; min-height: 1.2rem; height: auto !important; display: none; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.sr-reward-preview.show-reward { display: flex !important; opacity: 1; visibility: visible; color: #ffd700; font-weight: bold; text-shadow: 0 0 5px rgba(255,215,0,0.3); }
+.sr-reward-preview.hide-reward { display: none !important; }
+
+ </style>
+</head>
+<body>
+    <div id="app">
+    <section id="screen-home" class="screen">
+        <h1 style="font-family: 'Cinzel', serif; color: var(--accent); letter-spacing: 5px; margin-top: 50px; text-align: center; line-height: 1.2;">
+            GLOOMHAVEN<br>
+            <span style="font-size: 0.5em; letter-spacing: 8px; color: #888; font-weight: 400;">JAWS OF THE LION</span>
+        </h1>
+
+        <div style="margin-top: 80px; display: flex; flex-direction: column; gap: 20px; align-items: center; width: 100%;">
+            <div style="display: flex; gap: 8px; width: 280px; height: 50px; position: relative;">
+                <div id="selected-party-display" 
+                     style="flex: 1; border: 2px solid var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--card-bg); cursor: pointer; color: var(--text); font-weight: bold;"
+                     onclick="window.togglePartyList(event)">
+                    파티를 선택하세요
+                </div>
+                
+                <ul id="party-list" class="hidden"></ul> <button class="home-btn-add" 
+                        style="width: 50px; height: 50px; padding: 0; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;" 
+                        onclick="window.openModal('modal-party-name')">+</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; width: 280px;">
+                <button id="btn-party-enter" class="btn-confirm" style="flex: 1; opacity: 0.5;" onclick="window.enterSelectedParty()" disabled>입장</button>
+                <button id="btn-party-delete" style="flex: 1; background: #444; color: #ff4444; border: 1px solid #ff4444; border-radius: 8px; font-weight: bold; cursor: pointer; opacity: 0.5;" 
+                        onclick="window.deleteSelectedParty()" disabled>삭제</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="screen-job-select" class="screen hidden" style="padding: 20px 0;">
+        <h2 id="display-party-name" style="color: var(--accent); font-size: 1.1rem; margin-bottom: 15px; padding: 0 20px; text-align: center;">파티이름</h2>
+        <div class="job-list-vertical" id="job-list-container" style="padding: 0 20px;"></div>
+        <button onclick="window.showScreen('screen-home')" style="color:#666; background:none; border:none; margin-top:20px; font-size:0.8rem; width:100%; cursor:pointer;">← 처음으로 돌아가기</button>
+    </section>
+
+    <div id="modal-party-name" class="modal hidden">
+        <div class="modal-content">
+            <h3 style="color:var(--accent); font-family:'Cinzel';">CREATE NEW PARTY</h3>
+            <input type="text" id="input-party-name" class="underline-input" placeholder="파티 이름을 입력하세요" style="text-align:center; margin-bottom:25px; width:100%;">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn-confirm" onclick="window.confirmPartyName()" style="flex:1;">생성</button>
+                <button onclick="window.closeModal('modal-party-name')" style="flex:1; background:#444; border-radius:8px; color:white;">취소</button>
+            </div>
+        </div>
+    </div>
+
+
+	<div id="modal-char-sheet" class="modal-full hidden">
+    <header class="sheet-header">
+        <div class="header-left">
+            <span id="sheet-job-name" style="color:var(--accent); font-weight:bold;">직업</span>
+            <span id="sheet-lv-num-wrap" style="color:var(--accent);">LV.<span id="sheet-lv-num">1</span></span>
+        </div>
+        <div class="header-right-group">
+            <span id="sheet-player-name" class="name-txt">이름</span>
+            <div class="header-icons-wrap">
+                <button onclick="window.openNameEditModal()" title="이름 수정">✏️</button>
+                <button onclick="window.closeModal('modal-char-sheet')" title="뒤로가기">⬅️</button>
+                <button onclick="window.openModal('modal-reset-confirm')" title="초기화">❌</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="sheet-main-info">
+        <div class="job-image-area">
+            <img id="sheet-character-portrait" src="" alt="캐릭터 전신">
+        </div>
+
+        <div class="stats-area">
+            <div class="party-status-bar" onclick="window.openDifficultyModal()">
+                <div class="status-lv-box">
+                    <span class="emoji">💀</span>
+                    <span class="lv-label">PARTY LV.</span>
+                    <b id="header-scenario-lv">1</b>
+                </div>
+                <div class="status-divider"></div> 
+                <div class="status-check-txt">난이도 확인</div>
+            </div>
+
+            <div class="stat-item">
+                <div class="stat-label">EXP (총량 / 획득량)</div>
+                <div class="exp-line">
+                    <input type="number" id="input-exp" class="underline-input readonly-input" readonly>
+                    <input type="number" id="add-exp-input" class="underline-input edit-input" placeholder="획득량" onblur="window.addStatOnBlur('exp')" autocomplete="off">
+                </div>
+                <div class="exp-bar-wrap">
+                    <div class="exp-bar-bg">
+                        <div id="sheet-exp-fill" class="exp-bar-fill"></div>
+                    </div>
+                    <span id="next-lv-info" class="next-lv-txt"></span>
+                </div>
+            </div>
+
+            <div class="stat-item" style="margin-top: 10px;">
+                <div class="stat-label">GOLD (총량 / 획득량)</div>
+                <div class="gold-line">
+                    <input type="number" id="input-gold" class="underline-input readonly-input" readonly>
+                    <input type="number" id="add-gold-input" class="underline-input edit-input" placeholder="획득량" onblur="window.addStatOnBlur('gold')" autocomplete="off">
+                </div>
+                <div class="btn-group-mini">
+                    <button class="btn-mini" onclick="window.openShop()">🛒 상점</button>
+                    <button class="btn-mini" onclick="window.openBag()">🎒 가방</button>
+                </div>
+            </div>
+        </div> 
+    </div>
+
+    <div class="sheet-menu-grid">
+        <button class="menu-tab" onclick="window.openPerks()">📜 특혜</button>
+        <button class="menu-tab" onclick="window.openScenarioMode()">⚔️ 시나리오</button>
+        <button class="menu-tab" onclick="window.openCityEventMode()">🏙️ 도시이벤트</button>
+    </div>
+
+<div id="modal-difficulty" class="modal hidden">
+    <div class="modal-content">
+        <div class="sc-header">
+            <h3 class="sc-title">SCENARIO SETTING</h3>
+            <span onclick="window.closeModal('modal-difficulty')" style="cursor:pointer; font-size:1.5rem; color:#888;">&times;</span>
+        </div>
+
+        <div class="sc-avg-info-box">
+            <div class="sc-avg-item">평균 레벨 <b id="val-avg-lv" class="sc-avg-val">0.0</b></div>
+            <div class="sc-divider"></div>
+            <div class="sc-avg-item">기준 난이도 <b id="val-base-lv" class="sc-base-val">0</b></div>
+        </div>
+        
+        <div class="sc-diff-row">
+            <button class="sc-diff-btn" onclick="window.calcDifficulty(-1, this)">쉬움</button>
+            <button class="sc-diff-btn active" onclick="window.calcDifficulty(0, this)">보통</button>
+            <button class="sc-diff-btn" onclick="window.calcDifficulty(1, this)">어려움</button>
+            <button class="sc-diff-btn" onclick="window.calcDifficulty(2, this)">악몽</button>
+            <button class="sc-diff-btn" onclick="window.calcDifficulty(3, this)">지옥</button>
+        </div>
+
+        <div class="sc-result-grid">
+            <div class="sc-result-item border-r">
+                <span class="sc-result-label">몬스터 레벨</span>
+                <b id="res-monster" class="sc-result-val sc-val-monster">1</b>
+            </div>
+            <div class="sc-result-item">
+                <span class="sc-result-label">골드 배수</span>
+                <b id="res-coin" class="sc-result-val sc-val-gold">x2</b>
+            </div>
+            <div class="sc-result-item border-r border-t">
+                <span class="sc-result-label">함정 피해</span>
+                <b id="res-trap" class="sc-result-val sc-val-trap">3</b>
+            </div>
+            <div class="sc-result-item border-t">
+                <span class="sc-result-label">추가 경험치</span>
+                <b id="res-xp" class="sc-result-val sc-val-exp">+2</b>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div id="modal-name-edit" class="modal hidden">
+    <div class="modal-content">
+        <h3 class="modal-title">이름 수정</h3>
+        <p class="modal-desc">새로운 캐릭터 이름을 입력하세요.</p>
+        <input type="text" id="input-edit-name" class="underline-input" style="background: transparent !important;" autocomplete="off">
+        <div class="modal-btn-group">
+            <button class="btn-save-gold" onclick="window.confirmNameEdit()">저장</button>
+            <button class="btn-cancel-gray" onclick="window.closeModal('modal-name-edit')">취소</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-reset-confirm" class="modal hidden">
+    <div class="modal-content">
+        <h3 class="modal-title" style="color: #ff4444;">데이터 초기화</h3>
+        <p class="modal-desc">이 캐릭터의 모든 진행 정보가 삭제됩니다.<br>정말 진행하시겠습니까?</p>
+        <div class="modal-btn-group">
+            <button class="btn-reset-red" onclick="window.executeReset()">초기화</button>
+            <button class="btn-cancel-gray" onclick="window.closeModal('modal-reset-confirm')">취소</button>
+        </div>
+    </div>
+</div>
+
+<div id="sh-popup" class="sh-popup-overlay">
+    <div class="sh-popup-content">
+        <header class="sh-header">
+            <div class="sh-header-left">
+                <span class="sh-title">🛒 SHOP <small>(<span class="current-gold-display">0</span>)</small></span>
+            </div>
+            <button onclick="window.closeShop()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer;"> 🔙 캐릭터 시트로 </button>
+        </header>
+
+        <nav class="sh-category-bar">
+            <button onclick="window.renderShopItems('전체', this)" class="sh-category-btn active">전체</button>
+            <button onclick="window.renderShopItems('투구', this)" class="sh-category-btn">투구</button>
+            <button onclick="window.renderShopItems('갑옷', this)" class="sh-category-btn">갑옷</button>
+            <button onclick="window.renderShopItems('무기', this)" class="sh-category-btn">무기</button>
+            <button onclick="window.renderShopItems('신발', this)" class="sh-category-btn">신발</button>
+            <button onclick="window.renderShopItems('소모품', this)" class="sh-category-btn">소모품</button>
+        </nav>
+
+        <div id="sh-item-list" class="sh-scroll-area">
+            </div>
+
+        <footer class="sh-footer">
+            <div class="sh-unlock-zone">
+                <input type="text" id="sh-unlock-input" class="sh-footer-input" placeholder="No.">
+                <button class="sh-btn-confirm" onclick="window.unlockItem()">해금</button>
+            </div>
+            <button onclick="window.closeShop(); window.openBag();" class="btn-icon-switch" title="가방 보기">🎒</button>
+        </footer>
+    </div>
+</div> <div id="bg-popup" class="bg-popup-overlay" style="display: none;">
+    <div class="bg-popup-content">
+        <header class="bg-header">
+            <div class="sh-header-left">
+                <span class="sh-title">🎒 BAG <small>(<span class="current-gold-display">0</span>)</small></span>
+            </div>
+            <button onclick="window.closeBag()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer;"> 🔙 캐릭터 시트로 </button>
+        </header>
+
+        <nav class="bg-category-bar">
+            <button onclick="window.renderBagItems('전체', this)" class="bg-category-btn active">전체</button>
+            <button onclick="window.renderBagItems('투구', this)" class="bg-category-btn">투구</button>
+            <button onclick="window.renderBagItems('갑옷', this)" class="bg-category-btn">갑옷</button>
+            <button onclick="window.renderBagItems('무기', this)" class="bg-category-btn">무기</button>
+            <button onclick="window.renderBagItems('신발', this)" class="bg-category-btn">신발</button>
+            <button onclick="window.renderBagItems('소모품', this)" class="bg-category-btn">소모품</button>
+        </nav>
+
+        <div id="bg-item-list" class="bg-scroll-area">
+            </div>
+
+        <footer class="bg-footer">
+    <div class="bg-reward-zone" style="display: flex; gap: 5px; flex: 1;">
+        <input type="text" id="bg-reward-input" class="sh-footer-input" placeholder="Reward No.">
+        <button class="sh-btn-confirm" onclick="window.processRewardInput()" style="white-space: nowrap;">보상</button>
+    </div>
+    <button onclick="window.closeBag(); window.openShop();" class="btn-icon-switch" title="상점 보기" style="margin-left: 10px;">🛒</button>
+</footer>
+    </div>
+</div>
+
+<div id="modal-item-action" class="modal hidden">
+    <div class="modal-content item-action-content">
+        <h3 id="action-item-name" class="modal-title">아이템 이름</h3>
+        <p id="action-item-desc" class="modal-desc">이 아이템을 구매하시겠습니까?</p>
+        
+        <div class="action-info-zone">
+            가격: <span id="action-item-price">0</span>
+        </div>
+
+        <div class="modal-btn-group">
+            <button id="btn-item-buy" class="btn-confirm" onclick="window.processItemAction('buy')">구매</button>
+            <button class="btn-cancel-gray" onclick="window.closeModal('modal-item-action')">닫기</button>
+        </div>
+    </div>
+</div>
+
+<div id="popup-perks"> <div class="pk-popup-content">
+        <div class="pk-header">
+            <span class="pk-header-title">📜 특혜 (Perks)</span>
+            <button onclick="window.closePerks()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer;"> 🔙 캐릭터 시트로 </button>
+        </div>
+        
+        <div class="pk-scroll-area">
+            <div class="pk-point-control">
+                <span>특혜 포인트</span>
+                <div class="pk-stepper">
+                    <button onclick="window.changePerkPoint(-1)">-</button>
+                    <span id="display-perk-points">0</span>
+                    <button onclick="window.changePerkPoint(1)">+</button>
+                </div>
+            </div>
+
+            <div class="pk-battle-goal-section">
+                <span class="pk-sub-label">배틀 골 달성 (3칸 채울 시 포인트 +1)</span>
+                <div class="pk-battle-goal-boxes" id="battle-goal-container"></div>
+            </div>
+
+            <div id="perk-list-container"></div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div id="popup-scenario" class="sr-popup-overlay">
+    <div class="sr-popup-content">
+        <header class="sr-pp-header">
+            <div class="sr-info-zone">
+                <span class="sr-pp-title">⚔️ 캠페인 시나리오</span>
+            </div>
+            <button onclick="window.closeScenarioMode()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer;"> 🔙 캐릭터 시트로 </button>
+        </header>
+
+        <div id="scenario-grid" class="sr-pp-scroll-area">
+            </div>
+
+        <footer class="sr-footer-zone" style="display: flex; align-items: center; justify-content: flex-start; padding: 12px 20px;">
+    <div class="sh-unlock-zone" style="display: flex; align-items: center; gap: 8px;">
+        <input type="number" id="manual-sr-id" class="sh-footer-input no-spin" placeholder="No." 
+               style="width: 55px; text-align: center; -moz-appearance: textfield; appearance: none;">
+        <button class="sh-btn-confirm" onclick="window.handleManualScenarioToggle()">해금</button>
+    </div>
+    
+    <span style="font-size: 0.75rem; color: #666; margin-left: 15px; pointer-events: none;">
+        * 완료된 시나리오는 수정 불가
+    </span>
+</footer>
+<style>
+#manual-sr-id::-webkit-outer-spin-button,
+#manual-sr-id::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+</style>
+    </div>
+</div>
+</div>
+
+<div id="modal-treasure-manager" class="modal-global-overlay hidden" style="display: none;">
+    <div class="modal-global-content">
+        <header class="modal-global-header">
+            <span id="treasure-title" style="font-weight: bold;">🎁 보물 획득 기록</span>
+            <button onclick="window.closeModal('modal-treasure-manager')" class="modal-close-btn">×</button>
+        </header>
+        <div id="treasure-list" class="treasure-mgr-body" style="padding: 15px; min-height: 100px; max-height: 400px; overflow-y: auto;">
+            </div>
+    </div>
+</div>
+
+<div id="ce-popup" class="ce-popup-overlay">
+    <div class="ce-popup-content">
+        <header class="ce-header">
+            <div class="ce-header-left">
+                <span class="ce-title">🏙️ CITY EVENT</span>
+            </div>
+            <button onclick="window.closeCityEventMode()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer; font-weight:bold;"> 🔙 캐릭터 시트로 </button>
+        </header>
+
+        <nav class="ce-category-bar">
+            <span>활성: <b id="ce-count-active" style="color:#ffd700;">0</b></span>
+            <span>소멸: <b id="ce-count-removed" style="color:#ff6b6b;">0</b></span>
+            <span>잠김: <b id="ce-count-locked" style="color:#777;">0</b></span>
+        </nav>
+
+        <div class="ce-scroll-area">
+            <div class="ce-deck-section">
+                <span class="ce-section-title" style="color:#ffd700;">✅ 현재 덱</span>
+                <div id="ce-deck-numbers"></div>
+            </div>
+            <div class="ce-deck-section" style="border-left-color:#c0392b;">
+                <span class="ce-section-title" style="color:#ff6b6b;">🚫 소멸 덱</span>
+                <div id="ce-removed-numbers"></div>
+            </div>
+            <div class="ce-deck-section" style="border-left-color:#444; opacity:0.7;">
+                <span class="ce-section-title" style="color:#888;">🔒 잠긴 덱</span>
+                <div id="ce-locked-numbers"></div>
+            </div>
+        </div> <footer class="ce-footer">
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="number" id="ce-input-id" class="ce-footer-input" placeholder="No." style="width:70px;">
+                <input type="text" id="ce-input-note" class="ce-footer-input" placeholder="사건 결과 요약" style="flex:1;">
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 15px;">
+                <button class="ce-btn-action" onclick="window.handleCityEvent('toggle')" style="background:#444;">해금/잠금</button>
+                <button class="ce-btn-action" onclick="window.handleCityEvent('remove')" style="background:#c0392b;">영구 소멸</button>
+                <button class="ce-btn-action" onclick="window.handleCityEvent('bottom')" style="background:#2980b9;">덱 복귀</button>
+            </div>
+
+            <div class="ce-log-mini-zone">
+                <div style="display:flex; justify-content:space-between; align-items:center; color:#888; font-size:0.75rem; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:5px; cursor:pointer;" onclick="window.toggleCityEventLogs()">
+                    <div id="ce-log-summary" style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        📜 최근 기록: 없음
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center; flex-shrink:0;">
+                        <span id="ce-log-toggle-icon">▼</span>
+                        <span style="color:#ff6b6b; font-weight:bold;" onclick="event.stopPropagation(); window.clearCityEventLogs();">전체 삭제</span>
+                    </div>
+                </div>
+                
+                <div id="ce-log-container" class="hidden" style="max-height: 200px; overflow-y: auto; transition: all 0.3s ease;">
+                </div>
+            </div> </footer> </div> </div> <div id="modal-global-alert" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="alert-title" style="color:var(--accent);">알림</h3>
+        <p id="alert-message" style="margin: 20px 0; color: #ccc;"></p>
+        <button class="btn-confirm" onclick="window.closeModal('modal-global-alert')" style="width:100%;">확인</button>
+    </div>
+</div>
+
+<div id="modal-global-confirm" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="confirm-title" style="color:var(--accent); font-family:'Cinzel';">CONFIRM</h3>
+        <p id="confirm-message" style="margin: 20px 0; line-height: 1.5; color: var(--text);"></p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button id="confirm-action-btn" class="btn-confirm" style="flex:1;">확인</button>
+            <button onclick="window.closeModal('modal-global-confirm')" style="flex:1; background:#444; border-radius:8px; color:white; border:none; cursor:pointer;">취소</button>
+        </div>
+    </div>
+</div>
+
+
+
+</body>
+</html>
+<script type="module">
+// [1] Firebase 모듈 불러오기 (최상단)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+window.FB_DB = { getDatabase, ref, update, onValue };
+
+// 이 함수를 window.initApp이나 Firebase 데이터를 받아오는 .then() 블록 마지막에 넣으세요.
+window.syncAllDataAtStart = function() {
+    // 1. 장부 초기화
+    itemData.forEach(item => item.owners = []);
+
+    const parties = window.state.parties;
+    if (!parties) return;
+
+    // 2. 모든 캐릭터 가방을 탈탈 털어서 장부에 기입
+    Object.values(parties).forEach(party => {
+        // [수정 포인트] party.characters가 없을 경우 빈 객체로 대체하여 에러 방지
+        const characters = party.characters || {}; 
+        
+        Object.entries(characters).forEach(([jobName, charData]) => {
+            const myBag = charData.items || [];
+            myBag.forEach(itemId => {
+                const item = itemData.find(i => i.id == itemId);
+                if (item) {
+                    if (!item.owners.includes(jobName)) {
+                        item.owners.push(jobName);
+                    }
+                }
+            });
+        });
+    });
+    
+    console.log("✅ 초기 데이터 동기화 완료");
+};
+
+// [2] Firebase 설정
+const firebaseConfig = {
+    apiKey: "AIzaSyBavpez3lAxqLYEbcpXEfYEVAFVDwzTy_Y",
+    authDomain: "jotl-4dbb1.firebaseapp.com",
+    databaseURL: "https://jotl-4dbb1-default-rtdb.firebaseio.com", 
+    projectId: "jotl-4dbb1",
+    storageBucket: "jotl-4dbb1.firebasestorage.app",
+    messagingSenderId: "664719527629",
+    appId: "1:664719527629:web:6157026bd6f7e3dbfda384"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+window.state = {
+    parties: {},
+    currentPartyName: null,
+    isInitialized: false
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof window.renderPartyList === 'function') {
+        window.renderPartyList();
+    }
+});
+
+// [JS] 아이템 데이터 선언 (원본 수치 유지)
+window.itemData = [
+    { id: 1, name: "독수리 눈 고글", price: 30, stock: 2, type: "투구", owners: [] },
+    { id: 2, name: "철 투구", price: 20, stock: 2, type: "투구", owners: [] },
+    { id: 3, name: "쇠사슬 갑옷", price: 30, stock: 2, type: "갑옷", owners: [] },
+    { id: 4, name: "징 박은 가죽 갑옷", price: 25, stock: 2, type: "갑옷", owners: [] },
+    { id: 5, name: "낡은 장화", price: 15, stock: 2, type: "신발", owners: [] },
+    { id: 6, name: "날개 달린 신발", price: 15, stock: 2, type: "신발", owners: [] },
+    { id: 7, name: "다리미꼴 방패", price: 20, stock: 2, type: "무기", owners: [] },
+    { id: 8, name: "투척용 망치", price: 30, stock: 2, type: "무기", owners: [] },
+    { id: 9, name: "독 단검", price: 20, stock: 2, type: "무기", owners: [] },
+    { id: 10, name: "강철 창", price: 20, stock: 2, type: "무기", owners: [] },
+    { id: 11, name: "치료 물약", price: 10, stock: 2, type: "소모품", owners: [] },
+    { id: 12, name: "활력 물약", price: 10, stock: 2, type: "소모품", owners: [] },
+    { id: 13, name: "힘 물약", price: 10, stock: 2, type: "소모품", owners: [] },
+    { id: 14, name: "마나 물약", price: 10, stock: 2, type: "소모품", owners: [] },
+    { id: 15, name: "생명의 부적", price: 20, stock: 1, type: "소모품", owners: [] },
+    { id: 16, name: "초혼의 로브", price: 40, stock: 1, type: "갑옷", owners: [] },
+    { id: 17, name: "편안한 신발", price: 30, stock: 1, type: "신발", owners: [] },
+    { id: 18, name: "전투 도끼", price: 25, stock: 1, type: "무기", owners: [] },
+    { id: 19, name: "검은 양초", price: 40, stock: 1, type: "무기", owners: [] },
+    { id: 20, name: "기절 가루", price: 20, stock: 2, type: "소모품", owners: [] },
+    { id: 21, name: "송골매 투구", price: 20, stock: 1, type: "투구", owners: [] },
+    { id: 22, name: "날붙이 갑옷", price: 45, stock: 1, type: "갑옷", owners: [] },
+    { id: 23, name: "활보의 장화", price: 30, stock: 1, type: "신발", owners: [] },
+    { id: 24, name: "휘발성 폭탄", price: 40, stock: 1, type: "무기", owners: [] },
+    { id: 25, name: "가시 돋친 사슬", price: 30, stock: 1, type: "무기", owners: [] },
+    { id: 26, name: "떡갈나무 부적", price: 30, stock: 2, type: "소모품", owners: [] },
+    { id: 27, name: "운명 나침반", price: 25, stock: 1, type: "소모품", owners: [] },
+    { id: 28, name: "벼룩투성이 숄", price: 10, stock: 1, type: "갑옷", owners: [] },
+    { id: 29, name: "대형 방패", price: 40, stock: 1, type: "무기", owners: [] },
+    { id: 30, name: "신속의 반지", price: 40, stock: 1, type: "소모품", owners: [] },
+    { id: 31, name: "힘의 반지", price: 40, stock: 1, type: "소모품", owners: [] },
+    { id: 32, name: "회복의 반지", price: 40, stock: 1, type: "소모품", owners: [] },
+    { id: 33, name: "강철 반지", price: 30, stock: 1, type: "소모품", owners: [] },
+    { id: 34, name: "가시 돋친 도끼", price: 40, stock: 1, type: "무기", owners: [] },
+    { id: 35, name: "명령의 로브", price: 40, stock: 1, type: "갑옷", owners: [] },
+    { id: 36, name: "제트 장화", price: 30, stock: 1, type: "신발", owners: [] }
+];
+
+window.unlockedItemIds = [];
+
+window.perkData = {
+    "도끼투척수": [{n:2, t:"'-1' 카드 2장을 제거"}, {n:1, t:"'0' 카드 1장을 '+2 <span class='icon status'>혼란</span>' 카드 1장으로 교체"}, {n:1, t:"'0' 카드 1장을 '+1 <span class='icon poison'>중독</span>' 카드 1장으로 교체"}, {n:1, t:"'0' 카드 1장을 '+1 <span class='icon wound'>부상</span>' 카드 1장으로 교체"}, {n:1, t:"'0' 카드 1장을 '+1 <span class='icon immob'>이동불가</span>' 카드 1장으로 교체"}, {n:1, t:"'0' 카드 1장을 '+1 [밀기 2]' 카드 1장으로 교체"}, {n:1, t:"'0' 카드 1장을 '+0 <span class='icon stun'>기절</span>' 카드 1장으로 교체"}, {n:1, t:"'+1' 카드 1장을 '+1 <span class='icon stun'>기절</span>' 카드 1장으로 교체"}, {n:3, t:"'+2 <span class='icon air'>공기</span>' 카드 1장을 추가"}, {n:3, t:"'+1' 카드 1장을 '+3' 카드 1장으로 교체"}],
+    "적위병": [{n:1, t:"'0' 카드 4장을 제거"}, {n:1, t:"'-1' 카드 2장을 제거"}, {n:1, t:"'-2' 카드 1장 및 '+1' 카드 1장을 제거"}, {n:2, t:"'-1' 카드 1장을 '+1' 카드 1장으로 교체"}, {n:2, t:"'+1' 카드 1장을 '+2 <span class='icon fire'>불</span>' 카드 1장으로 교체"}, {n:2, t:"'+1' 카드 1장을 '+2 <span class='icon light'>빛</span>' 카드 1장으로 교체"}, {n:2, t:"'+1 <span class='icon fire'>불</span>,<span class='icon light'>빛</span>' 카드 1장을 추가"}, {n:2, t:"'+1 [방어 1] <span class='icon shield'>🛡️</span>' 카드 1장을 추가"}, {n:1, t:"'0' 카드 1장을 '+1 <span class='icon immob'>이동불가</span>' 카드 1장으로 교체"}, {n:1, t:"'0' 카드 1장을 '+1 <span class='icon wound'>부상</span>' 카드 1장으로 교체"}],
+    "철거전문가": [{n:1, t:"'0' 카드 4장을 제거"}, {n:2, t:"'-1' 카드 2장을 제거"}, {n:1, t:"'-2' 카드 1장 및 '+1' 카드 1장을 제거"}, {n:2, t:"'0' 카드 1장을 '+2 <span class='icon status'>혼란</span>' 카드 1장으로 교체"}, {n:2, t:"'-1' 카드 1장을 '+0 <span class='icon poison'>중독</span>' 카드 1장으로 교체"}, {n:2, t:"'+2' 카드 1장을 추가"}, {n:2, t:"'+1' 카드 1장을 '+2 <span class='icon earth'>땅</span>' 카드 1장으로 교체"}, {n:2, t:"'+1' 카드 1장을 '+2 <span class='icon fire'>불</span>' 카드 1장으로 교체"}, {n:2, t:"'0' 인접한 모든 적 피해 1 카드 1장 추가"}],
+    "공허감시자": [{n:1, t:"'-1' 카드 2장을 제거"}, {n:1, t:"'-2' 카드 1장을 제거"}, {n:2, t:"'0' 카드 1장을 '+1 <span class='icon dark'>어둠</span>' 카드 1장으로 교체"}, {n:2, t:"'0' 카드 1장을 '+1 <span class='icon ice'>냉기</span>' 카드 1장으로 교체"}, {n:2, t:"'-1' 카드 1장을 '+0 [치유 1 <span class='icon heal'>♥</span> 아군]' 카드 1장으로 교체"}, {n:3, t:"'+1 [치유 1 <span class='icon heal'>♥</span> 아군]' 카드 1장을 추가"}, {n:1, t:"'+1 <span class='icon poison'>중독</span>' 카드 1장을 추가"}, {n:1, t:"'+3' 카드 1장을 추가"}, {n:2, t:"'+1 <span class='icon curse'>저주</span>' 카드 1장을 추가"}]
+};
+
+const SCENARIO_TEMPLATE = {
+    1: { t: "길 가던 중의 습격", st: "unlocked", rw: "없음", items: [], ts: [], nxt: [2], lks: [] },
+    2: { t: "구멍 난 벽", st: "locked", rw: "각 +25G, 아이템 1~13 해금", items: [1,2,3,4,5,6,7,8,9,10,11,12,13], ts: [{ id: 14, c: "🪙x3", owner: null }], nxt: [3], lks: [] },
+    3: { t: "검은 배", st: "locked", rw: "각 1특혜포인트", items: [], ts: [], nxt: [4], lks: [] },
+    4: { t: "의식의 장소", st: "locked", rw: "아이템 14 해금", items: [14], ts: [{ id: 16, c: "#14 마나 포션", owner: null }], nxt: [5], lks: [] },
+    5: { t: "썩어가는 은신처", st: "locked", rw: "각 +25exp", items: [], ts: [{ id: 9, c: "+5G", owner: null }], nxt: [6], lks: [] },
+    6: { t: "공포의 유적", st: "locked", rw: "각 1특혜포인트", items: [], ts: [], nxt: [7, 8], lks: [] },
+    7: { t: "지하 감옥", st: "locked", rw: "각 +20exp", items: [], ts: [{ id: 12, c: "+5G", owner: null }], nxt: [9], lks: [8] },
+    8: { t: "자유로운 변절자", st: "locked", rw: "없음", items: [], ts: [{ id: 4, c: "+5G", owner: null }], nxt: [9], lks: [7] },
+    9: { t: "폭발하는 기계", st: "locked", rw: "각 +20exp,아이템 15~20 해금", items: [15,16,17,18,19,20], ts: [{ id: 1, c: "+10exp", owner: null }], nxt: [10], lks: [] },
+    10: { t: "가려진 태양", st: "locked", rw: "각 +15exp", items: [], ts: [{ id: 8, c: "피해3, 중독", owner: null }], nxt: [11, 12], lks: [] },
+    11: { t: "부서진 집단", st: "locked", rw: "#28 벼룩투성이 숄", items: [28], ts: [], nxt: [13, 19], lks: [12] },
+    12: { t: "하수도 쥐", st: "locked", rw: "#28 벼룩투성이 숄", items: [28], ts: [], nxt: [14, 18], lks: [11] },
+    13: { t: "피의 의식", st: "locked", rw: "아이템 30 해금", items: [30], ts: [{ id: 5, c: "+10G", owner: null }], nxt: [15], lks: [] },
+    14: { t: "그림자 습격", st: "locked", rw: "각 1특혜포인트", items: [], ts: [{ id: 15, c: "1특혜포인트", owner: null }], nxt: [15], lks: [] },
+    15: { t: "타오르는 숲", st: "locked", rw: "각 +10G, 아이템 21~26 해금", items: [21,22,23,24,25,26], ts: [], nxt: [16], lks: [] },
+    16: { t: "유독한 가스", st: "locked", rw: "각 +15exp, #29 대형 방패", items: [29], ts: [], nxt: [17], lks: [] },
+    17: { t: "잊혀진 동굴", st: "locked", rw: "각 +25exp, +30G", items: [], ts: [{ id: 3, c: "+15exp", owner: null }], nxt: [], lks: [] },
+    18: { t: "버려진 실험실", st: "locked", rw: "각 +10exp", items: [], ts: [{ id: 2, c: "#31 힘의 반지", owner: null }, { id: 6, c: "+10G", owner: null }, { id: 7, c: "+5G", owner: null }, { id: 13, c: "+5G", owner: null }], nxt: [], lks: [] },
+    19: { t: "최후의 보루", st: "locked", rw: "#31 힘의 반지", items: [31], ts: [], nxt: [], lks: [] },
+    20: { t: "심연의 부름", st: "locked", rw: "각 +10G", items: [], ts: [{ id: 99, c: "#32 회복의 반지", owner: null }], nxt: [], lks: [] },
+    21: { t: "붉은 안개", st: "locked", rw: "각 +15G", items: [], ts: [{ id: 11, c: "#30 신속의 반지", owner: null }], nxt: [], lks: [] },
+    22: { t: "파멸의 서막", st: "locked", rw: "#33 강철 반지", items: [33], ts: [], nxt: [], lks: [] },
+    23: { t: "혼돈의 도가니", st: "locked", rw: "#34 가시 돋친 도끼", items: [34], ts: [], nxt: [], lks: [] },
+    24: { t: "고대의 부름", st: "locked", rw: "#35 명령의 로브", items: [35], ts: [], nxt: [], lks: [] },
+    25: { t: "사자의 턱", st: "locked", rw: "#36 제트 장화", items: [36], ts: [], nxt: [], lks: [] }
+}
+
+window.scenarioData = window.scenarioData || null;
+
+/* ============================================================
+   [SECTION 1] 기초 도구 (화면 전환, 모달, 알림)
+   ============================================================ */
+
+// 1. 화면 전환 (Screen Switcher)
+window.showScreen = function(id) {
+    const allScreens = document.querySelectorAll('.screen, section');
+    allScreens.forEach(s => {
+        s.classList.add('hidden');
+        s.style.display = 'none';
+    });
+
+    const target = document.getElementById(id);
+    if (target) {
+        target.classList.remove('hidden');
+        const displayType = (id === 'screen-job-select' || id === 'screen-home') ? 'flex' : 'block';
+        target.style.setProperty('display', displayType, 'important');
+        if(displayType === 'flex') target.style.flexDirection = 'column';
+    }
+    window.scrollTo(0, 0);
+};
+
+
+// 2. 모달 제어 (Modal Control) - 수정본
+window.closeModal = function(id) {
+    console.log(`[닫기 시도] ID: ${id}`);
+    const m = document.getElementById(id);
+    if (m) {
+        m.classList.remove('active');
+        // 강제로 display: none을 박음 (이게 다음에 열 때 발목을 잡음)
+        m.style.setProperty('display', 'none', 'important'); 
+        console.log(`[닫기 완료]`);
+    }
+};
+
+window.openModal = function(id) {
+    const m = document.getElementById(id);
+    if (m) {
+        // [핵심] closeModal이 박아놓은 display: none 인라인 스타일을 제거!
+        m.style.removeProperty('display'); 
+        
+        m.classList.remove('hidden');
+        m.classList.add('active'); // active 클래스 추가 (상점 방식)
+        console.log(`[UI] ${id} 열기 성공 (인라인 스타일 제거됨)`);
+    }
+};
+
+// 3. 공통 알림창 (Alert)
+window.showAlert = function(title, message) {
+    const titleEl = document.getElementById('alert-title');
+    const msgEl = document.getElementById('alert-message');
+    const overlay = document.getElementById('modal-global-alert'); // id로 직접 찾기
+
+    if (titleEl) titleEl.innerText = title;
+    if (msgEl) msgEl.innerText = message;
+
+    if (overlay) {
+        // [정밀 타격] openModal을 믿지 않고 직접 클래스를 때려넣음
+        overlay.classList.remove('hidden');
+        overlay.classList.add('active');
+        
+        // 만약의 사태를 대비해 인라인 스타일로 확실히 도장 찍기
+        overlay.style.display = 'flex';
+        overlay.style.zIndex = '9999'; 
+        
+        console.log("🚩 showAlert 강제 실행 완료");
+    }
+};
+
+
+/* ============================================================
+   [SECTION 2] 데이터 리스너 & 렌더링
+   ============================================================ */
+
+// Firebase 데이터 실시간 감시
+// [주의] 함수 밖에 이 변수가 선언되어 있어야 중복 퇴장을 방지합니다.
+// 파일 최상단에 선언 (페이지 로드 시점 기록)
+window.lastEntryTime = window.lastEntryTime || Date.now();
+
+onValue(ref(db, 'parties'), (snapshot) => {
+    const data = snapshot.val() || {};
+    window.state.parties = data;
+
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const cName = window.state.currentCharacter;
+
+    // --- [1. 시나리오 데이터 동기화] (기존 유지) ---
+    if (pName && data[pName]) {
+        const serverSc = data[pName].scenarioData;
+        if (serverSc && Object.keys(serverSc).length > 0) {
+            window.scenarioData = JSON.parse(JSON.stringify(serverSc));
+        } else if (!window.scenarioData) {
+            window.scenarioData = JSON.parse(JSON.stringify(SCENARIO_TEMPLATE));
+        }
+        
+        if (window.scenarioData) {
+            Object.values(window.scenarioData).forEach(sc => {
+                if (sc && sc.st === 'completed' && sc.nxt) {
+                    sc.nxt.forEach(nid => {
+                        if (window.scenarioData[nid] && window.scenarioData[nid].st === 'locked') {
+                            window.scenarioData[nid].st = 'unlocked';
+                        }
+                    });
+                }
+            });
+            const scenarioPopup = document.getElementById('popup-scenario');
+            if (scenarioPopup?.classList.contains('active')) {
+                if (typeof window.renderScenarios === 'function') window.renderScenarios();
+            }
+        }
+    }
+
+    // --- [2. 실시간 강제 퇴장 및 캐릭터 시트 동기화] ---
+    if (cName && pName && data[pName]?.characters?.[cName]) {
+        const char = data[pName].characters[cName];
+
+        // [입장 시간 기준 퇴장 로직]
+        // 서버의 리셋 시간이 존재하고, 그 시간이 내가 시트에 들어온 시간(window.lastEntryTime)보다 최신이라면 퇴장!
+        if (char.lastResetAt && Number(char.lastResetAt) > window.lastEntryTime) {
+            const sheet = document.getElementById('modal-char-sheet');
+            
+            if (sheet && (sheet.classList.contains('active') || sheet.style.display !== 'none')) {
+                console.warn(`[강제 퇴장] ${cName} 캐릭터 리셋 신호 감지 (입장시간 이후 발생)`);
+                
+                // 전역 상태 초기화
+                window.state.currentCharacter = null;
+
+                // UI 닫기 (클래스 기반 접근)
+                sheet.classList.remove('active');
+                sheet.classList.add('hidden');
+                sheet.style.display = 'none';
+
+                // 공통 알림창 띄우기
+                if (typeof window.showGlobalAlert === 'function') {
+                    window.showGlobalAlert("해당 캐릭터가 초기화되어 메인 화면으로 이동합니다.");
+                }
+                return; // 퇴장했으므로 아래 UI 업데이트는 실행하지 않음
+            }
+        }
+
+        // --- [기존 실시간 UI 업데이트 로직] ---
+        const currentExp = Number(char.exp) || 0;
+        let currentLevel = 1;
+        const table = window.lvTable || [0, 45, 95, 150, 210, 275, 345, 420, 500];
+
+        for (let i = 1; i <= table.length; i++) {
+            if (currentExp >= table[i - 1]) currentLevel = i;
+        }
+
+        if (typeof window.updateSheetUI === 'function') {
+            window.updateSheetUI(currentExp, currentLevel, char.gold || 0);
+        }
+
+        const lvNumEl = document.getElementById('sheet-lv-num');
+        if (lvNumEl) lvNumEl.textContent = currentLevel;
+
+        if (typeof window.renderShopItems === 'function') window.renderShopItems('전체');
+        if (typeof window.renderBagItems === 'function') window.renderBagItems('전체');
+
+        const pkPopup = document.getElementById('popup-perks');
+        if (pkPopup?.classList.contains('active') && typeof window.renderPerks === 'function') {
+            window.renderPerks();
+        }
+    }
+
+    // 하단 리스트 갱신 (기존 유지)
+    if (typeof window.renderPartyList === 'function') window.renderPartyList();
+    if (pName && data[pName]?.characters && typeof window.renderJobList === 'function') {
+        window.renderJobList();
+    }
+});
+
+// --- [saveScenarioToFirebase: 시나리오 서버 저장 함수] ---
+window.saveScenarioToFirebase = async function() {
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    if (!pName || !window.scenarioData) return;
+
+    try {
+        const { ref, update, getDatabase } = window.FB_DB;
+        const db = getDatabase();
+        const updates = {};
+        
+        // 해당 파티의 scenarioData만 정밀 타격하여 저장
+        updates[`parties/${pName}/scenarioData`] = window.scenarioData;
+        
+        await update(ref(db), updates);
+        console.log(`✅ [Firebase] ${pName} 파티 시나리오 저장 완료`);
+    } catch (e) {
+        console.error("❌ 시나리오 서버 저장 실패:", e);
+    }
+};
+
+
+
+window.renderPartyList = function() {
+    const listContainer = document.getElementById('party-list');
+    const display = document.getElementById('selected-party-display');
+    
+    if (!listContainer) return; 
+
+    listContainer.innerHTML = '';
+    const partyNames = Object.keys(window.state.parties || {});
+
+    if (partyNames.length === 0) {
+        if (display) display.innerText = "파티를 생성하세요";
+        return;
+    }
+
+    // [수정] 마지막 접속 시간 기준으로 정렬 (최신순)
+    partyNames.sort((a, b) => {
+        const timeA = window.state.parties[a].lastAccessed || 0;
+        const timeB = window.state.parties[b].lastAccessed || 0;
+        return timeB - timeA;
+    });
+
+    partyNames.forEach(name => {
+        const li = document.createElement('li');
+        li.style = "padding: 12px; border-bottom: 1px solid #333; cursor: pointer; text-align: center; color: #fff; transition: 0.2s;";
+        li.innerText = name; 
+
+        li.onclick = (e) => {
+            e.stopPropagation(); 
+            window.selectPartyInHome(name);
+            window.togglePartyList();
+        };
+        
+        listContainer.appendChild(li);
+    });
+
+    // [수정] 선택된 파티가 없으면 '마지막 접속 파티(정렬 첫번째)'를 자동 선택
+    if (!window.state.homeSelectedParty && partyNames.length > 0) {
+        window.selectPartyInHome(partyNames[0]);
+    }
+};
+
+/* [HOME: ACTIONS] 파티 선택, 입장, 삭제 핸들링 */
+window.selectPartyInHome = function(name) {
+    // [수정] 마지막 접속 시간 기록 및 직접 DB 저장
+    if (window.state.parties[name]) {
+        const now = Date.now();
+        window.state.parties[name].lastAccessed = now;
+        
+        // 함수 호출 대신 직접 Firebase 경로에 업데이트
+        const partyRef = ref(db, `parties/${name}`);
+        update(partyRef, { lastAccessed: now }).catch(err => console.error("시간 저장 실패:", err));
+    }
+
+    // 1. 상태 업데이트
+    window.state.homeSelectedParty = name;
+    
+    // 2. 중앙 칸에 이름 표시
+    const display = document.getElementById('selected-party-display');
+    if (display) {
+        display.innerText = name;
+        display.style.color = "var(--accent)";
+    }
+    
+    // 3. 입장/삭제 버튼 활성화 및 스타일 제어
+    const enterBtn = document.getElementById('btn-party-enter');
+    const deleteBtn = document.getElementById('btn-party-delete');
+    
+    if (enterBtn) {
+        enterBtn.disabled = false;
+        enterBtn.style.opacity = "1";
+        enterBtn.style.cursor = "pointer";
+    }
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+        deleteBtn.style.opacity = "1";
+        deleteBtn.style.background = "#444";
+        deleteBtn.style.color = "#ff4444";
+        deleteBtn.style.border = "1px solid #ff4444";
+        deleteBtn.style.cursor = "pointer";
+    }
+};
+
+/* 입장 실행 */
+window.enterSelectedParty = function() {
+    if (window.state.homeSelectedParty) {
+        window.selectPartyByName(window.state.homeSelectedParty);
+    } else {
+        window.showAlert("알림", "입장할 파티를 먼저 선택해주세요.");
+    }
+};
+
+window.deleteSelectedParty = function() {
+    // 버튼이 활성화된 상태에서 눌리므로, 바로 핸들러로 넘깁니다.
+    if (window.state.homeSelectedParty) {
+        window.handlePartyDelete(window.state.homeSelectedParty);
+    }
+};
+
+/* ============================================================
+   [SECTION 3] 직업 선택 로직
+   ============================================================ */
+window.renderJobList = function() {
+    const container = document.getElementById('job-list-container');
+    const party = window.state.parties[window.state.currentPartyName];
+    if (!container || !party) return;
+    
+    container.innerHTML = '';
+    
+    // [기억하신 대로 함수 내부에 선언]
+    const jobs = [
+        { name: '적위병', img: 'rg1.jpg', fullImg: 'rg.jpg' },
+        { name: '도끼투척수', img: 'hc1.jpg', fullImg: 'hc.jpg' },
+        { name: '철거전문가', img: 'dm1.jpg', fullImg: 'dm.jpg' },
+        { name: '공허감시자', img: 'vw1.jpg', fullImg: 'vw.jpg' }
+    ];
+
+    jobs.forEach(job => {
+        // [정밀 타격] characters 뒤에 ? 를 붙여 undefined 에러를 방지합니다.
+        const charData = party.characters?.[job.name];
+        const isOccupied = charData && charData.playerName !== '';
+        
+        const card = document.createElement('div');
+        card.className = `job-card-v ${isOccupied ? 'occupied' : ''}`;
+        
+        card.onclick = () => {
+            if (isOccupied) {              
+                window.openDetailSheet(job.name, job.fullImg);
+            } else {
+                const input = document.getElementById(`input-${job.name}`);
+                if (input) input.focus();
+            }
+        };
+        
+        card.innerHTML = `
+            <img src="${job.img}" class="job-character-img" alt="${job.name}">
+            <div class="card-overlay">
+                <div class="job-info-row">
+                    <span style="color:var(--accent); font-weight:bold; font-size:1.2rem;">${job.name}</span>
+                    <span style="margin-top: 5px; font-size: 0.8rem; color: #ccc;">
+                        ${isOccupied ? charData.playerName : '선택 가능'}
+                    </span>
+                </div>
+                ${!isOccupied ? `
+                <div class="input-area" onclick="event.stopPropagation()">
+                    <input type="text" id="input-${job.name}" class="underline-input" placeholder="이름 입력" onkeyup="if(event.keyCode==13) window.startJourney('${job.name}')">
+                    <button class="btn-small-confirm" onclick="window.startJourney('${job.name}')">확인</button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+};
+
+window.startJourney = async function(job) {
+    const inputEl = document.getElementById(`input-${job}`);
+    if (!inputEl) return;
+
+    const pName = inputEl.value.trim();
+    
+    // [보정] modal-global-alert 사용
+    if (!pName) {
+        const msgElem = document.getElementById('alert-message');
+        if (msgElem) msgElem.innerText = "플레이어 이름을 입력하세요.";
+        window.openModal('modal-global-alert');
+        return;
+    }
+    
+    try {
+        const { getDatabase, ref, update } = window.FB_DB; 
+        const dbRef = getDatabase();
+
+        await update(ref(dbRef, `parties/${window.state.currentPartyName}/characters/${job}`), { 
+            playerName: pName,
+            job: job 
+        });
+
+        if (window.state.parties[window.state.currentPartyName]) {
+            const char = window.state.parties[window.state.currentPartyName].characters[job];
+            char.playerName = pName;
+            char.job = job;
+        }
+        
+        window.renderJobList();
+
+        const fullImgMap = { '적위병': 'rg.jpg', '도끼투척수': 'hc.jpg', '철거전문가': 'dm.jpg', '공허감시자': 'vw.jpg' };
+        window.openDetailSheet(job, fullImgMap[job]);
+
+    } catch (e) {
+        console.error("저장 실패:", e);
+        const msgElem = document.getElementById('alert-message');
+        if (msgElem) msgElem.innerText = "데이터베이스 저장에 실패했습니다.";
+        window.openModal('modal-global-alert');
+    }
+};
+
+/* ============================================================
+   [SECTION 4] 파티 관리 (생성, 삭제, 진입)
+   ============================================================ */
+/* [HOME: PARTY-LIST] 드롭다운 토글 */
+window.togglePartyList = function(e) {
+    if (e) e.stopPropagation();
+    const list = document.getElementById('party-list');
+    if (!list) return;
+
+    list.classList.toggle('hidden');
+
+    // 열렸을 때만 외부 클릭 감지 리스너를 한시적으로 등록
+    if (!list.classList.contains('hidden')) {
+        const closeOnOut = (ev) => {
+            if (!list.contains(ev.target)) {
+                list.classList.add('hidden');
+                document.removeEventListener('mousedown', closeOnOut);
+            }
+        };
+        document.addEventListener('mousedown', closeOnOut);
+    }
+};
+
+
+window.confirmPartyName = async function() {
+    const input = document.getElementById('input-party-name');
+    if (!input) return;
+    
+    const name = input.value.trim();
+
+    if (!name) {
+        // 공통 알림창 사용 (저장된 정보 반영)
+        const msgElem = document.getElementById('alert-message');
+        if (msgElem) msgElem.innerText = "파티 이름을 입력해주세요.";
+        window.openModal('modal-global-alert');
+        return;
+    }
+    const initialData = typeof SCENARIO_TEMPLATE !== 'undefined' 
+        ? JSON.parse(JSON.stringify(SCENARIO_TEMPLATE)) 
+        : {};
+
+    // [정밀 타격] 상점 해금 필드명 통일 및 시나리오/이벤트 빈 껍데기 추가
+    const newPartyData = {
+        partyName: name,
+        createdAt: new Date().toISOString(),
+        lastAccessed: Date.now(),
+        unlockedItems: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], // 초기 1~12번 해금 보장
+        scenarioData: initialData,            // 시나리오 초기 구조
+        cityEvents: { deck: [], discard: [] },                 // 도시 이벤트 초기 구조
+        characters: {
+            '적위병': { playerName: '', exp: 0, gold: 0, lv: 1, items: [], perkPoints: 0, battleGoals: [false, false, false], checkedPerks: {} },
+            '도끼투척수': { playerName: '', exp: 0, gold: 0, lv: 1, items: [], perkPoints: 0, battleGoals: [false, false, false], checkedPerks: {} },
+            '철거전문가': { playerName: '', exp: 0, gold: 0, lv: 1, items: [], perkPoints: 0, battleGoals: [false, false, false], checkedPerks: {} },
+            '공허감시자': { playerName: '', exp: 0, gold: 0, lv: 1, items: [], perkPoints: 0, battleGoals: [false, false, false], checkedPerks: {} }
+        }
+    };
+
+    try {
+        await set(ref(db, `parties/${name}`), newPartyData);
+        window.closeModal('modal-party-name');
+        input.value = '';
+        
+        window.selectPartyInHome(name);
+        // 생성 성공 알림
+        const msgElem = document.getElementById('alert-message');
+        if (msgElem) msgElem.innerText = `[${name}] 파티가 창설되었습니다!`;
+        window.openModal('modal-global-alert');
+        
+    } catch (e) {
+        console.error("파티 생성 실패:", e);
+        const msgElem = document.getElementById('alert-message');
+        if (msgElem) msgElem.innerText = "저장에 실패했습니다. 네트워크를 확인해주세요.";
+        window.openModal('modal-global-alert');
+    }
+};
+
+window.selectPartyByName = function(name) {
+    window.state.currentPartyName = name;
+    document.getElementById('display-party-name').innerText = name;
+    window.showScreen('screen-job-select');
+    window.renderJobList();
+};
+
+window.handlePartyDelete = function(name) {
+    const titleEl = document.getElementById('confirm-title');
+    const msgEl = document.getElementById('confirm-message');
+    const actionBtn = document.getElementById('confirm-action-btn');
+
+    if (!titleEl || !msgEl || !actionBtn) {
+        console.error("삭제 확인 모달의 HTML 요소가 부족합니다.");
+        return;
+    }
+
+    titleEl.innerText = "파티 삭제";
+    msgEl.innerHTML = `🏰 <b>${name}</b> 파티를 삭제하시겠습니까? <br><small style="color:red;">이 작업은 되돌릴 수 없습니다.</small>`;
+    
+    // [정밀 타격] executeDelete가 아닌 executePartyDelete를 호출하도록 변경
+    actionBtn.onclick = () => window.executePartyDelete(name);
+    
+    window.openModal('modal-global-confirm');
+};
+
+
+// [정밀 타격] 파티 전용 삭제 실행 함수 추가
+window.executePartyDelete = function(name) {
+    if (!name) return;
+
+    const partyRef = ref(db, `parties/${name}`);
+    remove(partyRef)
+        .then(() => {
+                window.state.homeSelectedParty = null;
+            location.reload(); 
+        }) 
+        .catch((err) => {
+         
+            console.error("파티 삭제 실패:", err);
+            alert("삭제 중 오류가 발생했습니다.");
+        });
+};
+
+
+// [1] 시트 진입 및 데이터 로드
+// lvTable을 전역(window) 객체에 담아 어디서든 접근 가능하게 합니다.
+window.lvTable = [0, 45, 95, 150, 210, 275, 345, 420, 500];
+const lvTable = window.lvTable; // 기존 코드 호환성을 위해 유지
+
+
+
+// [시트 진입]
+window.openDetailSheet = function(jobName, fullImgName) {
+    const partyName = window.state.currentPartyName;
+    const charData = window.state.parties[partyName]?.characters?.[jobName];
+    if (!charData) return;
+
+    // --- [핵심 수정: 입장 시간 기록] ---
+    // 시트에 진입하는 '지금 이 순간'을 기록합니다. 
+    // 이 시간 이후에 발생하는 서버 리셋 신호에만 반응하게 됩니다.
+    window.lastEntryTime = Date.now();
+    window.state.currentCharacter = jobName; 
+
+    // [데이터 보정 로직]
+    const requiredFields = {
+        items: charData.items || [],
+        checkedPerks: charData.checkedPerks || {},
+        battleGoals: charData.battleGoals || [false, false, false],
+        perkPoints: charData.perkPoints || 0
+    };
+    const needsFix = !charData.items || !charData.checkedPerks || !charData.battleGoals;
+    if (needsFix) {
+        const { ref, update, getDatabase } = window.FB_DB; 
+        const db = getDatabase();
+        const charRef = ref(db, `parties/${partyName}/characters/${jobName}`);
+        update(charRef, requiredFields); 
+    }
+
+    // UI 매핑
+    const portraitImg = document.getElementById('sheet-character-portrait');
+    const jobNameEl = document.getElementById('sheet-job-name');
+    const playerNameEl = document.getElementById('sheet-player-name');
+    const lvNumEl = document.getElementById('sheet-lv-num');
+    const expInput = document.getElementById('input-exp');
+    const goldInput = document.getElementById('input-gold');
+
+    if (portraitImg) portraitImg.src = `${fullImgName || 'default.jpg'}`;
+    if (jobNameEl) jobNameEl.textContent = jobName; 
+    if (playerNameEl) playerNameEl.textContent = charData.playerName || "이름 없음";
+    if (lvNumEl) lvNumEl.textContent = charData.lv || "1";
+    if (expInput) expInput.value = charData.exp || 0;
+    if (goldInput) goldInput.value = charData.gold || 0;
+
+    // --- [UI 표시 및 재진입 처리] ---
+    const sheet = document.getElementById('modal-char-sheet');
+    if (sheet) {
+        // 1. 기존에 남았을 수 있는 인라인 스타일 제거
+        sheet.style.removeProperty('display'); 
+        
+        // 2. 클래스 제어 (active 추가로 화면 표시)
+        sheet.classList.remove('hidden');
+        sheet.classList.add('active'); 
+
+        // 3. 데이터 로드 및 UI 갱신
+        if (typeof window.loadCharacterData === 'function') {
+            window.loadCharacterData(jobName);
+        }
+        if (typeof window.updateSheetUI === 'function') {
+            const table = window.lvTable || [0, 45, 95, 150, 210, 275, 345, 420, 500];
+            const currentExp = Number(charData.exp) || 0;
+            let currentLevel = 1;
+            for (let i = 1; i <= table.length; i++) {
+                if (currentExp >= table[i - 1]) currentLevel = i;
+            }
+            window.updateSheetUI(currentExp, currentLevel, charData.gold || 0);
+        }
+        
+        console.log(`[UI] 상세 시트 입장 완료 (기준 시간: ${window.lastEntryTime})`);
+    }
+};
+
+// [이름 수정]
+window.openNameEditModal = function() {
+    console.log("1. 함수 진입"); 
+    const party = window.state.parties[window.state.currentPartyName];
+    const job = window.state.currentCharacter;
+    
+    console.log("2. 체크:", { partyName: window.state.currentPartyName, job: job });
+
+    if (!party || !job) {
+        console.warn("3. 중단됨: 파티나 직업 정보가 없습니다.");
+        return;
+    }
+
+    const input = document.getElementById('input-edit-name');
+    if(input) {
+        input.value = party.characters[job].playerName || "";
+        console.log("4. 모달 열기 실행");
+        window.openModal('modal-name-edit');
+        setTimeout(() => input.select(), 100);
+    }
+};
+
+window.confirmNameEdit = async function() {
+    const newName = document.getElementById('input-edit-name').value.trim();
+    if (!newName) return;
+    
+    const partyName = window.state.currentPartyName;
+    const job = window.state.currentCharacter;
+
+    try {
+        // [정밀 타격] 전체 데이터가 아닌 해당 직업의 playerName만 업데이트
+        await update(ref(db, `parties/${partyName}/characters/${job}`), { playerName: newName });
+        
+        // UI 즉시 반영
+        const nameElem = document.getElementById('sheet-player-name');
+        if (nameElem) nameElem.innerText = newName;
+        
+        window.closeModal('modal-name-edit');
+        console.log(`✅ [${job}] 이름이 '${newName}'으로 변경되었습니다.`);
+    } catch (e) { 
+        window.showAlert("오류", "이름 수정에 실패했습니다.");
+        console.error(e); 
+    }
+};
+
+window.executeReset = function() {
+    const partyName = window.state.currentPartyName;
+    const jobName = window.state.currentCharacter;
+    
+    if (!partyName || !jobName) return;
+
+    // 1. 기본 데이터 맵 (기존 백업본 유지)
+    const initialDataMap = {
+        '적위병': { playerName: '', exp: 0, gold: 0, lv: 1, items: [], perkPoints: 0, battleGoals: [false, false, false], checkedPerks: {} },
+        '도끼투척수': { playerName: '', exp: 0, gold: 0, lv: 1, items: [], perkPoints: 0, battleGoals: [false, false, false], checkedPerks: {} },
+        '철거전문가': { playerName: '', exp: 0, gold: 0, lv: 1, items: [], perkPoints: 0, battleGoals: [false, false, false], checkedPerks: {} },
+        '공허감시자': { playerName: '', exp: 0, gold: 0, lv: 1, items: [], perkPoints: 0, battleGoals: [false, false, false], checkedPerks: {} }
+    };
+
+    // Firebase 참조 (db 객체 확인 필요)
+    const charRef = ref(db, `parties/${partyName}/characters/${jobName}`);
+    
+    // [핵심 수정] 기존 백업 데이터 + lastResetAt 신호탄 추가
+    const resetData = {
+        ...(initialDataMap[jobName] || { playerName: '', exp: 0, gold: 0, lv: 1 }),
+        lastResetAt: Date.now() // <-- 이 신호가 있어야 실시간 퇴장이 작동합니다!
+    };
+
+    // update 대신 set을 사용하거나, resetData 전체를 update 합니다.
+    update(charRef, resetData)
+        .then(() => {
+            // 1. 본인 화면 즉시 닫기 (재진입 시 버그 방지)
+            const sheet = document.getElementById('modal-char-sheet');
+            if (sheet) {
+                window.state.currentCharacter = null;
+                sheet.classList.remove('active');
+                sheet.classList.add('hidden');
+                sheet.style.display = 'none';
+            }
+
+            // 2. 컨펌 모달 닫기
+            window.closeModal('modal-reset-confirm');
+            
+            // 3. 알림창 (선택 사항)
+            if (typeof window.showGlobalAlert === 'function') {
+                window.showGlobalAlert("캐릭터 초기화가 완료되었습니다.");
+            }
+            
+            console.log(`[성공] ${jobName} 초기화 및 신호탄 발송 완료`);
+        })
+        .catch((error) => console.error("초기화 실패:", error));
+};
+
+// [경험치 입력 및 자동 레벨업]
+window.handleExpInput = async function(val) {
+    const exp = parseInt(val) || 0;
+    const partyName = window.state.currentPartyName;
+    const job = window.state.currentCharacter;
+    
+    // 현재 캐릭터의 기존 골드 정보를 미리 확보합니다.
+    const currentCharData = window.state.parties[partyName]?.characters[job];
+    const currentGold = currentCharData?.gold || 0;
+
+    // 레벨 계산 로직
+    let level = 1;
+    for(let i = 1; i <= lvTable.length; i++) {
+        if(exp >= lvTable[i-1]) level = i;
+    }
+
+    try {
+        await update(ref(db, `parties/${partyName}/characters/${job}`), { exp: exp, lv: level });
+        
+        // [정밀 타격] 이제 골드까지 '삼총사'를 완성해서 보냅니다.
+        window.updateSheetUI(exp, level, currentGold);
+    } catch (e) { console.error("경험치 저장 실패", e); }
+};
+
+window.updateSheetUI = function(exp, level, gold) {
+    const currentExp = Number(exp) || 0;
+    const currentLv = Number(level) || 1;
+    const currentGold = Number(gold) || 0; 
+
+    // [정밀 타격] 전역에 선언된 lvTable을 안전하게 가져옵니다.
+    const table = window.lvTable || [0, 45, 95, 150, 210, 275, 345, 420, 500];
+
+    const lvNumElem = document.getElementById('sheet-lv-num');
+    if (lvNumElem) lvNumElem.innerText = currentLv;
+
+    const expInput = document.getElementById('input-exp');
+    if (expInput) expInput.value = currentExp;
+
+    const sheetModal = document.getElementById('modal-char-sheet');
+    if (sheetModal) {
+        const goldInput = sheetModal.querySelector('#input-gold'); 
+        if (goldInput) {
+            if (isNaN(currentGold)) {
+                console.error("🚨 골드 데이터 이상 발생: ", gold);
+            } else {
+                goldInput.value = currentGold;
+            }
+        }
+    }
+
+    // --- [경험치 바 계산 로직 수정] ---
+    // 전역에서 가져온 table 변수를 사용합니다.
+    const minExp = table[currentLv - 1] || 0;
+    const maxExp = table[currentLv] || 500;
+    const nextLvLabel = (currentLv < 9) ? (currentLv + 1) : 'MAX';
+
+    const infoElem = document.getElementById('next-lv-info');
+    if (infoElem) {
+        infoElem.innerText = (currentLv < 9) ? `LV.${nextLvLabel} (${maxExp})` : "MAX";
+    }
+
+    const fillElem = document.getElementById('sheet-exp-fill');
+    if (fillElem) {
+        // currentLv가 업데이트되어 들어오므로, 이제 progress가 100%를 넘지 않고 새 레벨 기준으로 계산됩니다.
+        let progress = (currentLv >= 9) ? 100 : ((currentExp - minExp) / (maxExp - minExp)) * 100;
+        fillElem.style.width = Math.min(Math.max(progress, 0), 100) + "%";
+    }
+};
+
+window.updateDifficultyBar = function() {
+    const party = window.state.parties[window.state.currentPartyName];
+    // 플레이어 이름이 있는 캐릭터만 필터링
+    const activeChars = Object.values(party.characters).filter(c => c.playerName && c.playerName !== '');
+    
+    if (activeChars.length === 0) return;
+
+    const totalLv = activeChars.reduce((sum, c) => sum + (parseInt(c.lv) || 1), 0);
+    const avg = totalLv / activeChars.length;
+    const scenarioLv = Math.ceil(avg / 2);
+
+    const headerLv = document.getElementById('header-scenario-lv');
+    if (headerLv) headerLv.innerText = scenarioLv;
+    
+    return { avg: avg.toFixed(1), scenarioLv: scenarioLv };
+};
+
+window.openDifficultyModal = function() {
+    const diffData = window.updateDifficultyBar();
+    if(!diffData) return;
+
+    const valBaseLv = document.getElementById('val-base-lv');
+    const valAvgLv = document.getElementById('val-avg-lv');
+    
+    if(valAvgLv) valAvgLv.innerText = diffData.avg;
+    if(valBaseLv) valBaseLv.innerText = diffData.scenarioLv;
+
+    window.calcDifficulty(0); 
+    window.openModal('modal-difficulty');
+};
+
+window.calcDifficulty = function(diff, btn) {
+    // 1. 기준 레벨 가져오기 (시나리오 레벨 헤더 기준)
+    const headerLv = document.getElementById('header-scenario-lv');
+    const baseLv = parseInt(headerLv ? headerLv.innerText : 1) || 1;
+    const targetLv = Math.max(0, baseLv + diff);
+
+    // 2. 버튼 활성화 상태 업데이트 (sc- 접두사 반영)
+    if (btn) {
+        // 모든 난이도 버튼에서 active 제거 후 클릭한 버튼만 추가
+        document.querySelectorAll('.sc-diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    // 3. 결과 표시 엘리먼트 확보
+    const resMonster = document.getElementById('res-monster');
+    const resCoin = document.getElementById('res-coin');
+    const resTrap = document.getElementById('res-trap');
+    const resXp = document.getElementById('res-xp');
+
+    // 4. 결과값 매핑 및 UI 업데이트
+    if(resMonster) resMonster.innerText = targetLv;
+    
+    // 골드 배수 공식: 레벨 0 이하면 x2, 7 이상이면 x6, 그 외엔 레벨/2 + 2
+    if(resCoin) {
+        const coinMult = targetLv <= 0 ? 2 : (targetLv >= 7 ? 6 : Math.floor(targetLv / 2) + 2);
+        resCoin.innerText = `x${coinMult}`;
+    }
+    
+    // 함정 피해 및 추가 경험치 업데이트
+    if(resTrap) resTrap.innerText = targetLv + 2; 
+    if(resXp) resXp.innerText = `+${targetLv * 2 + 4}`;
+};
+
+// [획득량 합산 저장]
+window.addStatOnBlur = async function(type) {
+    const job = window.state.currentCharacter;
+    const partyName = window.state.currentPartyName;
+    const addInput = document.getElementById(`add-${type}-input`);
+    
+    if (!addInput || !addInput.value || !job) return;
+
+    const addValue = parseInt(addInput.value) || 0;
+    if (addValue === 0) { addInput.value = ""; return; }
+
+    // 현재 데이터 가져와서 합산
+    const currentVal = window.state.parties[partyName].characters[job][type] || 0;
+    const newTotal = currentVal + addValue;
+
+    try {
+        const charRef = ref(db, `parties/${partyName}/characters/${job}`);
+        await update(charRef, { [type]: newTotal });
+        
+        // 경험치일 경우 레벨업 로직 실행
+        if (type === 'exp') window.handleExpInput(newTotal);
+        
+        addInput.value = ''; // 입력창 초기화
+        console.log(`${type} 업데이트 완료: ${newTotal}`);
+    } catch (e) {
+        console.error("데이터 저장 실패", e);
+    }
+};
+
+
+// [골드 표시 업데이트]
+window.updateGoldDisplay = function() {
+    const job = window.state.currentCharacter;
+    const partyName = window.state.currentPartyName;
+    
+    const charData = window.state.parties[partyName]?.characters?.[job];
+    if (!charData) return;
+
+    const gold = charData.gold || 0;
+   
+    document.querySelectorAll('.current-gold-display').forEach(el => {
+        el.innerText = `${gold}G`; 
+    });
+
+    const goldInput = document.getElementById('input-gold');
+    if (goldInput) goldInput.value = gold;
+};
+
+/* ============================================================
+    [SECTION: ITEM SYSTEM] 상점 및 가방 관리 (window. 방식)
+   ============================================================ */
+
+/* [SECTION: UI CONTROL] */
+
+window.openShop = function() {
+    const shopPopup = document.getElementById('sh-popup'); // ID 수정: sh-popup
+    if (!shopPopup) {
+        console.error("상점 팝업(sh-popup)을 찾을 수 없습니다.");
+        return;
+    }
+
+    shopPopup.style.display = 'flex';
+    
+    setTimeout(() => {
+        shopPopup.classList.add('active');
+    }, 10);
+
+    // 내부 데이터 갱신
+    window.updateGoldDisplay(); 
+    window.renderShopItems('전체');
+};
+
+// 2. 상점 닫기
+window.closeShop = function() {
+    const shopPopup = document.getElementById('sh-popup'); // ID 수정: sh-popup
+    if (!shopPopup) return;
+
+    shopPopup.classList.remove('active');
+    setTimeout(() => {
+        shopPopup.style.display = 'none';
+    }, 200);
+};
+
+// 1. 아이템 소유권 업데이트 (중앙 통제실)
+window.syncItemOwnership = function(itemId, targetJob, action = 'add') {
+    const pName = window.state.currentPartyName;
+    const item = itemData.find(i => i.id == itemId); // == 사용 (문자/숫자 상관없이)
+    const char = window.state.parties[pName]?.characters[targetJob];
+    
+    if (!item || !char) return false;
+
+    // 데이터 초기화 보장
+    if (!char.items) char.items = [];
+    if (!item.owners) item.owners = [];
+
+    if (action === 'add') {
+        // [정밀 타격] 재고 수량 강제 숫자 변환 (없으면 0으로 처리할지 1로 할지 결정)
+        // 상점에서 아예 없는 템(재고0)을 막으려면 기본값을 0이나 item.stock으로 엄격히 제한
+        const maxStock = item.stock !== undefined ? Number(item.stock) : 0; 
+        const currentCount = item.owners.length;
+
+        // 1. 재고 0이거나 이미 꽉 찼으면 즉시 차단
+        if (currentCount >= maxStock) {
+            console.warn(`[차단] ${item.name}: 재고 없음 (${currentCount}/${maxStock})`);
+            return false; 
+        }
+
+        // 2. 본인 중복 소지 체크
+        if (char.items.includes(Number(itemId))) return false;
+
+        // --- 검사 통과 시에만 실제 데이터 수정 ---
+        char.items.push(Number(itemId));
+        if (!item.owners.includes(targetJob)) {
+            item.owners.push(targetJob);
+        }
+        
+    } else if (action === 'remove') {
+        char.items = char.items.filter(id => Number(id) !== Number(itemId));
+        item.owners = item.owners.filter(owner => owner !== targetJob);
+    }
+
+    // Firebase 업데이트
+    const charRef = ref(db, `parties/${pName}/characters/${targetJob}`);
+    update(charRef, { items: char.items });
+    
+    return true; 
+};
+
+// 구매 또는 보상 획득 처리
+window.processItemAction = function(type) {
+    if (!window.selectedItem) return;
+
+    const partyName = window.state.currentPartyName;
+    const jobName = window.state.currentCharacter;
+    const charData = window.state.parties[partyName]?.characters?.[jobName];
+
+    if (!charData) return;
+
+    const itemId = Number(window.selectedItem.id);
+    const currentGold = charData.gold || 0;
+    const currentItems = charData.items || [];
+
+    if (type === 'buy') {
+        // 중복 및 골드 체크 (기존 로직 동일)
+        if (currentItems.includes(itemId)) {
+            const msgElem = document.getElementById('alert-message');
+            if (msgElem) msgElem.innerText = "이미 소유하고 있는 아이템입니다!";
+            window.closeModal('modal-item-action');
+            return window.openModal('modal-global-alert');
+        }
+
+        if (currentGold < window.selectedItem.price) {
+            const msgElem = document.getElementById('alert-message');
+            if (msgElem) msgElem.innerText = "구매 실패! 골드가 부족합니다!";
+            window.closeModal('modal-item-action');
+            return window.openModal('modal-global-alert');
+        }
+
+        const newGold = currentGold - window.selectedItem.price;
+        const newItems = [...currentItems, itemId];
+
+        const charRef = ref(db, `parties/${partyName}/characters/${jobName}`);
+        
+        update(charRef, {
+            gold: newGold,
+            items: newItems
+        }).then(() => {
+            // [정밀 타격] 1. 즉시 로컬 state 업데이트 (리스너가 오기 전 선제 조치)
+            window.state.parties[partyName].characters[jobName].gold = newGold;
+            window.state.parties[partyName].characters[jobName].items = newItems;
+
+            // [정밀 타격] 2. 모든 골드 표시 요소 실시간 갱신 호출
+            window.updateGoldDisplay(); 
+            
+            // [정밀 타격] 3. 상점 목록 재렌더링 (재고/소유주 배지 즉시 반영)
+            window.renderShopItems(window.currentShopFilter || '전체');
+
+            window.closeModal('modal-item-action');
+            const msgElem = document.getElementById('alert-message');
+            if (msgElem) msgElem.innerText = `[#${itemId}] ${window.selectedItem.name} 구매 성공!`;
+            window.openModal('modal-global-alert');
+        }).catch(err => console.error("구매 처리 오류:", err));
+    }
+};
+
+// 상점 아이템 렌더링
+window.renderShopItems = function(filterType = '전체', btnElement = null) {
+    const listContainer = document.getElementById('sh-item-list');
+    if (!listContainer) return;
+
+    // 1. 데이터 베이스에서 해금 목록 가져오기 (없으면 1~12번 기본 해금)
+    const partyName = window.state.currentPartyName;
+    const partyData = window.state.parties[partyName] || {};
+    const unlockedItemIds = partyData.unlockedItems || [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+    const savedScrollTop = listContainer.scrollTop;
+    listContainer.innerHTML = '';
+
+    // 카테고리 버튼 활성화 시각화
+    if (btnElement) {
+        document.querySelectorAll('.sh-category-btn').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+
+    itemData.forEach(item => {
+        // [정밀 타격] 주석 해제: 해금된 아이템만 표시
+        if (!unlockedItemIds.includes(item.id)) return;
+        if (filterType !== '전체' && item.type !== filterType) return;
+
+        // 2. 소유주 직업 배열 가져오기 (우리가 수정한 함수 호출)
+        const ownerJobs = window.getItemOwnershipInfo(item.id); 
+        const maxStock = item.stock || 2; // 아이템 고유 재고 (기본값 2)
+        const currentStock = maxStock - ownerJobs.length; // 남은 재고 계산
+        const isSoldOut = currentStock <= 0;
+
+        // 3. 우측 3단 구성 요소 준비
+        // 상단: 가격 또는 품절
+        const topDisplay = isSoldOut 
+            ? `<span class="sh-item-soldout">품절</span>` 
+            : `<span class="sh-item-price">${item.price}G</span>`;
+
+        // 중단: 재고 (NaN 방지 위해 || 0 처리)
+        const stockDisplay = `<span class="sh-item-stock">재고 ${Math.max(0, currentStock)} / ${maxStock}</span>`;
+        
+        // 하단: 직업 색상 라벨 (없으면 빈칸)
+        let ownerDisplay = '';
+        if (ownerJobs.length > 0) {
+            const badges = ownerJobs.map(job => `<span class="badge-job badge-${job}">${job.substring(0, 2)}</span>`).join('');
+            ownerDisplay = `<div class="sh-item-owner-row">${badges}</div>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'sh-item-card';
+        // 전체 카드 클릭 시 구매/액션 창 열기 (품절이면 클릭 방지)
+        if (!isSoldOut) {
+            card.onclick = () => window.openItemAction(item);
+        } else {
+            card.style.opacity = "0.7";
+            card.style.cursor = "default";
+        }
+
+        card.innerHTML = `
+            <div class="sh-item-info">
+                <span class="sh-item-no">#${String(item.id).padStart(2, '0')}</span>
+                <span class="sh-item-name">${item.name}</span>
+                <span class="sh-item-type">${item.type}</span>
+            </div>
+            <div class="sh-item-buy-zone">
+                <div class="sh-top-row">${topDisplay}</div>
+                <div class="sh-mid-row">${stockDisplay}</div>
+                <div class="sh-bottom-row">${ownerDisplay}</div>
+            </div>
+        `;
+        
+        listContainer.appendChild(card);
+    });
+
+    requestAnimationFrame(() => { listContainer.scrollTop = savedScrollTop; });
+};
+
+window.unlockItem = function() {
+    const inputElem = document.getElementById('sh-unlock-input');
+    if (!inputElem) return;
+
+    const rawInput = inputElem.value.trim();
+    const partyName = window.state.currentPartyName;
+    const partyData = window.state.parties[partyName];
+
+    if (!partyName || !partyData) return;
+    if (!rawInput) {
+        window.showAlert("알림", "번호 또는 범위(예: 1-13, 15)를 입력해주세요.");
+        return;
+    }
+
+    // [정밀 타격 1] 스마트 입력 분석 (쉼표, 하이픈, 물결표 대응)
+    let targetIds = [];
+    const segments = rawInput.split(','); // 1. 쉼표로 분리
+
+    segments.forEach(seg => {
+        const rangeMatch = seg.match(/(\d+)\s*[-~]\s*(\d+)/); // 2. 범위(1-13) 확인
+        if (rangeMatch) {
+            const start = parseInt(rangeMatch[1]);
+            const end = parseInt(rangeMatch[2]);
+            const min = Math.min(start, end);
+            const max = Math.max(start, end);
+            for (let i = min; i <= max; i++) targetIds.push(i);
+        } else {
+            const id = parseInt(seg.trim()); // 3. 단일 숫자 확인
+            if (!isNaN(id)) targetIds.push(id);
+        }
+    });
+
+    // 중복 제거 및 유효 숫자 필터링
+    targetIds = [...new Set(targetIds)].filter(id => id > 0);
+    if (targetIds.length === 0) return;
+
+    // [정밀 타격 2] 토글 로직 (있으면 빼고 없으면 넣기)
+    let currentList = partyData.unlockedItems || [];
+    
+    targetIds.forEach(id => {
+        const index = currentList.indexOf(id);
+        if (index > -1) {
+            // 이미 있으면 제거 (잠금)
+            currentList.splice(index, 1);
+        } else {
+            // 없으면 추가 (해금)
+            currentList.push(id);
+        }
+    });
+
+    // 정렬
+    currentList.sort((a, b) => a - b);
+
+    // [정밀 타격 3] DB 업데이트
+    const partyRef = ref(db, `parties/${partyName}`);
+    update(partyRef, {
+        unlockedItems: currentList
+    }).then(() => {
+        inputElem.value = ''; // 입력창 초기화
+        
+        // 결과 알림 메시지 구성
+        const actionMsg = targetIds.length > 1 
+            ? `${targetIds.length}개의 아이템 상태가 변경되었습니다.` 
+            : `아이템 #${targetIds[0]} 상태가 변경되었습니다.`;
+            
+        const msgElem = document.getElementById('alert-message');
+        if (msgElem) msgElem.innerText = actionMsg;
+        window.openModal('modal-global-alert');
+        
+        // 상점 화면 즉시 갱신
+        if (typeof window.renderShopItems === 'function') {
+            window.renderShopItems(window.currentShopFilter || '전체');
+        }
+    }).catch(err => console.error("상점 데이터 업데이트 실패:", err));
+};
+
+window.openBag = function() {
+    const bagPopup = document.getElementById('bg-popup');
+    if (!bagPopup) return;
+    bagPopup.style.display = 'flex';
+    setTimeout(() => bagPopup.classList.add('active'), 10);
+    window.renderBagItems('전체');
+};
+
+window.closeBag = function() {
+    const bagPopup = document.getElementById('bg-popup');
+    if (bagPopup) {
+        bagPopup.classList.remove('active');
+        setTimeout(() => bagPopup.style.display = 'none', 200);
+    }
+};
+
+window.processSell = function(item) {
+    if (!item) return;
+    const { currentPartyName: pName, currentCharacter: cName } = window.state;
+    const charData = window.state.parties[pName]?.characters?.[cName];
+    if (!charData) return;
+
+    const titleElem = document.getElementById('confirm-title');
+    const msgElem = document.getElementById('confirm-message');
+    const confirmBtn = document.getElementById('confirm-action-btn');
+
+    if (titleElem) titleElem.innerText = "ITEM SELL";
+    if (msgElem) {
+        msgElem.innerHTML = `
+            <div style="text-align:center;">
+                <b style="color:var(--accent);">[${item.name}]</b>을(를) 판매하시겠습니까?<br>
+                <span style="color:#ffd700; font-weight:bold;">수익: ${Math.ceil(item.price / 2)}G</span>
+            </div>`;
+    }
+
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            const sellPrice = Math.ceil(item.price / 2);
+            const newGold = (Number(charData.gold) || 0) + sellPrice;
+            const newItems = (charData.items || []).filter(id => Number(id) !== Number(item.id));
+
+            update(ref(db, `parties/${pName}/characters/${cName}`), { 
+                gold: newGold, 
+                items: newItems 
+            }).then(() => {
+                charData.gold = newGold;
+                charData.items = newItems;
+
+                if (window.updateGoldDisplay) window.updateGoldDisplay();
+                window.renderBagItems();
+                
+                window.closeModal('modal-global-confirm');
+                window.closeModal('modal-item-action');
+            });
+        };
+    }
+
+    window.openModal('modal-global-confirm');
+};
+
+window.executeDelete = function(itemId) {
+    const item = itemData.find(i => i.id == itemId);
+    if (!item) return;
+
+    const titleElem = document.getElementById('confirm-title');
+    const msgElem = document.getElementById('confirm-message');
+    const confirmBtn = document.getElementById('confirm-action-btn');
+
+    if (titleElem) titleElem.innerText = "ITEM DELETE";
+    if (msgElem) {
+        msgElem.innerHTML = `
+            <div style="text-align:center;">
+                <b style="color:#ff4444;">[${item.name}]</b><br>
+                아이템을 정말 삭제하시겠습니까?
+            </div>`;
+    }
+
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            const currentJob = window.state.currentCharacter;
+            window.syncItemOwnership(Number(itemId), currentJob, 'remove');
+            
+            if (typeof window.saveAllData === 'function') window.saveAllData();
+
+            setTimeout(() => {
+                window.renderBagItems();
+                window.closeModal('modal-global-confirm');
+                window.closeModal('modal-item-action'); // 상세창도 함께 닫기
+            }, 300);
+        };
+    }
+
+    window.openModal('modal-global-confirm');
+};
+
+window.openTradeTargetSelect = function(itemId) {
+    const item = itemData.find(i => i.id == itemId);
+    const pName = window.state.currentPartyName;
+    const currentJob = window.state.currentCharacter;
+    const party = window.state.parties[pName];
+    
+    window.itemToTrade = item;
+    window.selectedTradeTarget = null;
+
+    const msgElem = document.getElementById('alert-message');
+    if (!msgElem) return;
+
+    let buttonsHtml = `<div style="margin-bottom:15px; text-align:center;"><b>[${item.name}]</b><br>양도 대상을 선택하세요.</div>`;
+    buttonsHtml += '<div style="display:flex; flex-direction:column; gap:8px;">';
+    
+    let hasTarget = false; // 대상이 있는지 체크하는 변수 추가
+
+    if (party && party.characters) {
+        Object.keys(party.characters).forEach(job => {
+            const char = party.characters[job];
+            
+            // 이름이 있고, 본인이 아닌 경우만 버튼 생성
+            if (String(job) !== String(currentJob) && char.playerName && char.playerName.trim() !== "") {
+                hasTarget = true; // 대상을 찾음!
+                const displayName = char.playerName;
+                
+                buttonsHtml += `
+                    <button class="trade-target-btn" id="trade-btn-${job}" 
+                            style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid #444; color:#fff; border-radius:4px; cursor:pointer;"
+                            onclick="window.selectTradeTarget('${job}')">
+                        <div style="font-size:0.75rem; color:#888; margin-bottom:2px;">${job}</div>
+                        <div style="font-size:1rem; font-weight:bold; color:var(--accent);">${displayName}</div>
+                    </button>`;
+            }
+        });
+    }
+
+    // 만약 양도 대상이 한 명도 없다면 안내 문구 출력
+    if (!hasTarget) {
+        buttonsHtml += `<div style="text-align:center; padding:20px; color:#666; font-size:0.9rem;">양도 가능한 파티원이 없습니다.</div>`;
+    }
+    
+    buttonsHtml += '</div>';
+    buttonsHtml += `
+        <div id="trade-action-btns" style="display:flex; gap:10px; margin-top:20px;">
+            <button id="final-trade-confirm" class="btn-confirm" 
+                    style="flex:1; opacity:0.4; background:#444;" 
+                    disabled onclick="window.executeTrade()">양도</button>
+            <button class="btn-cancel" 
+                    style="flex:1; background:#666; color:#fff; border:none; border-radius:4px; cursor:pointer;" 
+                    onclick="window.closeModal('modal-global-alert')">취소</button>
+        </div>`;
+    
+    msgElem.innerHTML = buttonsHtml;
+
+    // 기존 확인 버튼 숨기기 (양도 전용 버튼들을 사용하므로)
+    const originalConfirmBtn = document.querySelector('#modal-global-alert .modal-content > .btn-confirm:not(#final-trade-confirm)');
+    if (originalConfirmBtn) originalConfirmBtn.style.display = 'none';
+
+    window.openModal('modal-global-alert');
+};
+
+window.selectTradeTarget = function(job) {
+    window.selectedTradeTarget = job;
+
+    // 모든 버튼 초기화
+    document.querySelectorAll('.trade-target-btn').forEach(btn => {
+        btn.style.border = '1px solid #444';
+        btn.style.background = 'rgba(255,255,255,0.05)';
+        btn.style.color = '#fff';
+    });
+
+    // 선택된 버튼 금색 강조
+    const selectedBtn = document.getElementById(`trade-btn-${job}`);
+    if (selectedBtn) {
+        selectedBtn.style.border = '1px solid #ffd700'; // 금색 테두리
+        selectedBtn.style.background = 'rgba(255, 215, 0, 0.1)';
+        selectedBtn.style.color = '#ffd700';
+    }
+
+    // 양도 버튼 활성화
+    const confirmBtn = document.getElementById('final-trade-confirm');
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.style.opacity = '1';
+        confirmBtn.style.cursor = 'pointer';
+        confirmBtn.style.background = '#ffd700'; // 활성화 시 금색
+        confirmBtn.style.color = '#000';
+    }
+};
+
+window.executeTrade = function() {
+    const targetJob = window.selectedTradeTarget;
+    const item = window.itemToTrade;
+    if (!targetJob || !item) return;
+
+    const itemId = Number(item.id);
+    const currentJob = window.state.currentCharacter;
+    const party = window.state.parties[window.state.currentPartyName];
+    const targetChar = party.characters[targetJob];
+
+    // [정밀 타격] 중복 소유 체크 로직
+    if (targetChar.items && targetChar.items.includes(itemId)) {
+        // 중복인 경우: 안내 메시지만 띄우고 종료 (데이터 삭제 안 함)
+        const msgElem = document.getElementById('alert-message');
+        if (msgElem) {
+            msgElem.innerHTML = `
+                <div style="text-align:center; padding:10px;">
+                    <b style="color:#ff4444;">양도 실패</b><br>
+                    ${targetJob}(${targetChar.playerName})이(가)<br>이미 <b>[${item.name}]</b>을(를) 가지고 있습니다.
+                </div>`;
+        }
+        
+        // 확인 버튼 살리기 (닫을 수 있게)
+        const originalConfirmBtn = document.querySelector('#modal-global-alert .modal-content > .btn-confirm:not(#final-trade-confirm)');
+        if (originalConfirmBtn) originalConfirmBtn.style.display = 'block';
+        
+        // 양도/취소 버튼 영역 숨기기
+        const actionBtns = document.getElementById('trade-action-btns');
+        if (actionBtns) actionBtns.style.display = 'none';
+        
+        return; // 함수 종료 (여기서 리턴하면 내 가방에서도 삭제 안 됨)
+    }
+
+    // 2. 중복이 아닐 경우에만 실제 데이터 이동 실행
+    window.syncItemOwnership(itemId, currentJob, 'remove');
+    window.syncItemOwnership(itemId, targetJob, 'add');
+
+    if (typeof window.saveAllData === 'function') window.saveAllData();
+
+    // 3. UI 복구 및 성공 메시지
+    const originalConfirmBtn = document.querySelector('#modal-global-alert .modal-content > .btn-confirm:not(#final-trade-confirm)');
+    if (originalConfirmBtn) originalConfirmBtn.style.display = 'block';
+
+    const msgElem = document.getElementById('alert-message');
+    if (msgElem) {
+        msgElem.innerHTML = `
+            <div style="text-align:center; padding:10px;">
+                <b style="color:var(--accent);">[${item.name}]</b><br>
+                ${targetJob}에게 전달되었습니다.
+            </div>`;
+    }
+
+    const actionBtns = document.getElementById('trade-action-btns');
+    if (actionBtns) actionBtns.style.display = 'none';
+
+    window.renderBagItems();
+    window.itemToTrade = null;
+    window.selectedTradeTarget = null;
+};
+
+window.processRewardInput = function() {
+    const inputField = document.getElementById('bg-reward-input');
+    if (!inputField || !inputField.value.trim()) return;
+
+    const input = inputField.value.trim();
+    const itemIds = [];
+    
+    // 파싱 (1-3, 5...)
+    input.split(',').forEach(seg => {
+        if (seg.includes('-')) {
+            const parts = seg.split('-').map(n => parseInt(n.trim()));
+            if (parts.length === 2) {
+                const [s, e] = parts;
+                for (let i = Math.min(s, e); i <= Math.max(s, e); i++) itemIds.push(i);
+            }
+        } else {
+            const n = parseInt(seg.trim());
+            if (!isNaN(n)) itemIds.push(n);
+        }
+    });
+
+    const { currentCharacter: cName } = window.state;
+    let addedNames = [];
+    let failedNames = [];
+
+    // [정밀 타격] 루프 돌면서 결과 수집
+    itemIds.forEach(id => {
+        const item = itemData.find(i => i.id === id);
+        if (!item) return;
+
+        // syncItemOwnership의 결과(true/false)를 엄격하게 체크
+        const result = window.syncItemOwnership(id, cName, 'add');
+        
+        if (result === true) {
+            addedNames.push(item.name);
+        } else {
+            failedNames.push(item.name);
+        }
+    });
+
+    // 데이터 저장 및 화면 갱신
+    if (addedNames.length > 0) {
+        if (typeof window.saveAllData === 'function') window.saveAllData();
+        if (typeof window.renderBagItems === 'function') window.renderBagItems();
+        inputField.value = ""; // 성공 시에만 입력창 비움
+    }
+
+    // [모달 결과 표시] - 문구 정밀 타격
+    const titleElem = document.getElementById('alert-title');
+    const msgElem = document.getElementById('alert-message');
+
+    if (addedNames.length > 0) {
+        titleElem.innerText = "처리 결과"; // '지급' 대신 '처리'로 더 포괄적인 표현
+        msgElem.innerHTML = `
+            <div style="text-align:center;">
+                <b style="color:var(--accent);">${addedNames.length}건 처리 성공</b><br>
+                <small style="color:#888;">대상: ${addedNames.join(', ')}</small>
+                ${failedNames.length > 0 ? `
+                    <div style="margin-top:10px; padding-top:10px; border-top:1px solid #444;">
+                        <span style="color:#ffaa00; font-size:0.8rem;">⚠️ 제외됨(재고/중복): ${failedNames.join(', ')}</span>
+                    </div>
+                ` : ""}
+            </div>`;
+    } else {
+        titleElem.innerText = "처리 실패";
+        msgElem.innerHTML = `
+            <div style="text-align:center; color:#ff4444;">
+                요청하신 항목을 처리할 수 없습니다.<br>
+                <small>(이미 소지 중이거나 재고가 소진되었습니다.)</small>
+            </div>`;
+    }
+
+    window.openModal('modal-global-alert');
+};
+
+// 가방 아이템 렌더링 (items 변수 사용)
+window.renderBagItems = function(filterType = '전체', btnElement = null) {
+    const listContainer = document.getElementById('bg-item-list');
+    if (!listContainer) return;
+
+    // 1. 현재 접속 정보 및 데이터 경로 추적
+    const partyName = window.state.currentPartyName;
+    const jobName = window.state.currentCharacter;
+    const partyData = window.state.parties[partyName];
+    const charData = (partyData && partyData.characters) ? partyData.characters[jobName] : null;
+    
+    if (typeof window.updateGoldDisplay === 'function') {
+        window.updateGoldDisplay(); 
+    }
+
+    if (!charData) {
+        listContainer.innerHTML = '<p class="sh-empty-msg">캐릭터 데이터를 불러오는 중...</p>';
+        return;
+    }
+
+    // 2. 데이터 필터링 (아이템 목록 추출 및 상세 정보 매칭)
+    const myItemIds = charData.items || [];
+    const myItems = itemData.filter(item => myItemIds.includes(item.id));
+    const filteredItems = myItems.filter(item => filterType === '전체' || item.type === filterType);
+
+    // 3. 카테고리 버튼 UI 업데이트
+    if (btnElement) {
+        document.querySelectorAll('.bg-category-btn').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+
+    // 4. 리스트 초기화 및 렌더링
+    listContainer.innerHTML = '';
+    if (filteredItems.length === 0) {
+        listContainer.innerHTML = `<p class="sh-empty-msg" style="text-align:center; margin-top:50px;">${filterType} 항목이 없습니다.</p>`;
+        return;
+    }
+
+    // 5. 확정된 레이아웃으로 카드 생성 (정밀 타격 수정 구간)
+    filteredItems.forEach(item => {
+        const sellPrice = Math.ceil(item.price / 2);
+        const card = document.createElement('div');
+        card.className = 'bag-item-card';
+        
+        card.innerHTML = `
+            <div class="bag-item-left">
+                <div class="bag-item-header">
+                    <span class="bag-item-id">#${String(item.id).padStart(2, '0')}</span>
+                    <span class="bag-item-name">${item.name}</span>
+                </div>
+                <div class="bag-item-category">${item.type}</div>
+            </div>
+            <div class="bag-item-right">
+                <button class="btn-bag-remove" onclick="event.stopPropagation(); window.executeDelete('${item.id}')" title="아이템 삭제">×</button>
+                <div class="bag-item-sell-price">판매가: ${sellPrice}G</div>
+                <button class="btn-bag-trade" onclick="event.stopPropagation(); window.openTradeTargetSelect('${item.id}')">양도</button>
+            </div>
+        `;
+        
+        // [수정] 카드 클릭 시: openSellAction -> processSell
+        card.onclick = () => window.processSell(item);
+        listContainer.appendChild(card);
+    });
+};
+
+
+// 소유 정보 추출 유틸
+window.getItemOwnershipInfo = function(itemId) {
+    const partyName = window.state.currentPartyName;
+    if (!partyName || !window.state.parties[partyName]) return []; // 문자열 '없음' 대신 빈 배열 반환
+
+    const characters = window.state.parties[partyName].characters || {};
+    const ownerJobs = [];
+
+    // 플레이어 이름 대신 '직업명(Key)'을 수집합니다.
+    Object.entries(characters).forEach(([jobName, data]) => {
+        if (data.items && data.items.includes(itemId)) {
+            ownerJobs.push(jobName);
+        }
+    });
+
+    return ownerJobs; // ['적위병', '철거전문가'] 식의 배열 반환
+};
+
+// 모달 오픈 유틸 (상점용)
+window.openItemAction = function(item) {
+    if (!item) return;
+
+    // [정밀 타격] 전역 변수에 현재 선택된 아이템 저장 (ReferenceError 방지)
+    window.selectedItem = item;
+
+    // 모달 내 텍스트 세팅 (아이템 이름, 가격 등)
+    const titleElem = document.querySelector('#modal-item-action .modal-title'); // 모달 타이틀 ID에 맞게 수정
+    if (titleElem) titleElem.innerText = item.name;
+
+    const priceElem = document.getElementById('action-item-price'); // 가격 표시 엘리먼트가 있다면
+    if (priceElem) priceElem.innerText = `${item.price}G`;
+
+    // 공통 모달창 띄우기
+    window.openModal('modal-item-action');
+};;
+
+
+// 1. 특혜 창 열기 (인자 없이 전역 상태 활용)
+window.openPerks = function() {
+    const jobName = window.state.currentCharacter; // 상세 시트 진입 시 저장된 값
+    if (!jobName) {
+        console.error("캐릭터 선택 정보가 없습니다.");
+        return;
+    }
+    
+    // UI 표시
+    const popup = document.getElementById('popup-perks');
+    if (popup) popup.classList.add('active'); 
+
+    // 해당 직업의 데이터를 정밀 타격하여 렌더링
+    window.renderPerks(jobName);
+};
+
+// 2. 포인트 가감 (가장 중요한 부분: currentCharacter 명시)
+window.changePerkPoint = function(amount) {
+    const partyName = window.state.currentPartyName;
+    const jobName = window.state.currentCharacter; // "현재 열린 시트"의 주인공
+    
+    if (!partyName || !jobName) return;
+
+    const charData = window.state.parties[partyName].characters[jobName];
+    const currentPoints = charData.perkPoints || 0;
+    const newPoints = Math.max(0, currentPoints + amount);
+
+    // [데이터 독립] 현재 주인공의 상태만 변경
+    const charRef = ref(db, `parties/${partyName}/characters/${jobName}`);
+    update(charRef, { perkPoints: newPoints }).then(() => {
+        // 성공 시 로컬 상태 업데이트 후 해당 직업 창만 다시 그림
+        window.state.parties[partyName].characters[jobName].perkPoints = newPoints;
+        window.renderPerks(jobName);
+    });
+};
+
+// 3. 특혜 창 닫기 (사용자님 HTML의 window.closePerks 대응)
+window.closePerks = function() {
+    const popup = document.getElementById('popup-perks');
+    if (popup) popup.classList.remove('active');
+};
+
+// 1. 배틀골 토글 및 3칸 완성 시 포인트 자동 지급
+window.toggleBattleGoal = function(jobName, index) {
+    const partyName = window.state.currentPartyName;
+    const charData = window.state.parties[partyName].characters[jobName];
+    let newGoals = [...(charData.battleGoals || [false, false, false])];
+    let currentPoints = charData.perkPoints || 0;
+
+    // 현재 상태 반전
+    newGoals[index] = !newGoals[index];
+
+    // [로직] 3칸이 모두 체크되었는지 확인
+    const checkedCount = newGoals.filter(g => g === true).length;
+    
+    // 만약 방금 3번째 칸을 체크했다면 포인트 +1 및 리셋
+    if (checkedCount === 3) {
+        currentPoints += 1;
+        newGoals = [false, false, false]; // 칸 비우기
+        console.log("배틀골 완성! 포인트 +1 지급 및 리셋");
+
+const msgElem = document.getElementById('alert-message');
+    if (msgElem) msgElem.innerText = "특혜 포인트 1점을 획득!";
+    window.openModal('modal-global-alert');
+    }
+
+    // DB 업데이트
+    const charRef = ref(db, `parties/${partyName}/characters/${jobName}`);
+    update(charRef, { 
+        battleGoals: newGoals,
+        perkPoints: currentPoints
+    }).then(() => {
+        window.state.parties[partyName].characters[jobName].battleGoals = newGoals;
+        window.state.parties[partyName].characters[jobName].perkPoints = currentPoints;
+        window.renderPerks(jobName);
+    });
+};
+
+// 2. 특혜 체크박스 토글 (포인트 소모/환급 로직 포함)
+window.togglePerk = function(jobName, perkIdx, subIdx) {
+    const partyName = window.state.currentPartyName;
+    const charData = window.state.parties[partyName].characters[jobName];
+    const checkedPerks = { ...(charData.checkedPerks || {}) };
+    let currentPoints = charData.perkPoints || 0;
+    const key = `${perkIdx}-${subIdx}`;
+
+    if (checkedPerks[key]) {
+        // [해제 시] 포인트 +1 환급
+        delete checkedPerks[key];
+        currentPoints += 1;
+    } else {
+        // [체크 시] 포인트가 있을 때만 가능
+        if (currentPoints <= 0) {
+            // 사용자님이 저장해두신 공통 알림창 활용
+            const msgElem = document.getElementById('alert-message');
+            if (msgElem) msgElem.innerText = "사용 가능한 특혜 포인트가 없습니다.";
+            window.openModal('modal-global-alert');
+            return;
+        }
+        checkedPerks[key] = true;
+        currentPoints -= 1;
+    }
+
+    // DB 업데이트
+    const charRef = ref(db, `parties/${partyName}/characters/${jobName}`);
+    update(charRef, { 
+        checkedPerks: checkedPerks,
+        perkPoints: currentPoints
+    }).then(() => {
+        window.state.parties[partyName].characters[jobName].checkedPerks = checkedPerks;
+        window.state.parties[partyName].characters[jobName].perkPoints = currentPoints;
+        window.renderPerks(jobName);
+    });
+};
+
+window.renderPerks = function(jobName) {
+    const pkListContainer = document.getElementById('perk-list-container');
+    const bgContainer = document.getElementById('battle-goal-container'); // id로 정밀 타격
+    if (!pkListContainer) return;
+
+    const partyName = window.state.currentPartyName;
+    const charData = window.state.parties[partyName].characters[jobName];
+    const perks = window.perkData[jobName]; 
+    
+    if (!charData || !perks) return;
+
+    // 1. [포인트] UI 업데이트
+    const pointDisplay = document.getElementById('display-perk-points');
+    if (pointDisplay) pointDisplay.textContent = charData.perkPoints || 0;
+
+    // 2. [배틀골] 3칸 렌더링
+    if (bgContainer) {
+        bgContainer.innerHTML = ''; 
+        const battleGoals = charData.battleGoals || [false, false, false];
+        
+        for (let i = 0; i < 3; i++) {
+            const box = document.createElement('div');
+            // CSS 클래스명 pk-bg-box 사용
+            box.className = `pk-bg-box ${battleGoals[i] ? 'checked' : ''}`;
+            box.innerText = battleGoals[i] ? '✔' : '';
+            
+            box.onclick = () => {
+                if (typeof window.toggleBattleGoal === 'function') {
+                    window.toggleBattleGoal(jobName, i);
+                }
+            };
+            bgContainer.appendChild(box);
+        }
+    }
+
+    // 3. [특혜 리스트] (기존 로직 유지)
+    const checkedPerks = charData.checkedPerks || {};
+    pkListContainer.innerHTML = '';
+    perks.forEach((perk, perkIdx) => {
+        const row = document.createElement('div');
+        row.className = 'pk-row';
+        const checkContainer = document.createElement('div');
+        checkContainer.className = 'pk-check-container';
+
+        for (let i = 0; i < perk.n; i++) {
+            const checkKey = `${perkIdx}-${i}`;
+            const isChecked = checkedPerks[checkKey] || false;
+            const dot = document.createElement('div');
+            dot.className = `pk-check ${isChecked ? 'checked' : ''}`;
+            dot.onclick = () => {
+                if (typeof window.togglePerk === 'function') {
+                    window.togglePerk(jobName, perkIdx, i);
+                }
+            };
+            checkContainer.appendChild(dot);
+        }
+        const txtDiv = document.createElement('div');
+        txtDiv.className = 'pk-txt';
+        txtDiv.innerHTML = perk.t;
+        row.appendChild(checkContainer);
+        row.appendChild(txtDiv);
+        pkListContainer.appendChild(row);
+    });
+};
+
+/* ==========================================
+   시나리오 보상 처리 (골드, XP, 특혜, 아이템)
+   ========================================== */
+window.applyScenarioRewards = function(id, isAdding) {
+    const sc = window.scenarioData[id];
+    if (!sc || !sc.rw || sc.rw === '없음') return;
+
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+    if (!party || !party.characters) return;
+
+    const multiply = isAdding ? 1 : -1;
+    const rewards = sc.rw.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+
+    rewards.forEach(reward => {
+        // 1. 특혜 포인트 인식
+        if (reward.includes('특혜')) {
+            const valMatch = reward.match(/\d+/);
+            const val = valMatch ? parseInt(valMatch[0]) : 0;
+            Object.keys(party.characters).forEach(jobKey => {
+                const char = party.characters[jobKey];
+                char.perkPoints = (Number(char.perkPoints) || 0) + (val * multiply);
+            });
+        }
+        
+        // 2. 골드 / 경험치 인식
+        if (reward.includes('G') || reward.includes('🪙') || reward.includes('골드') || /XP|경험치/i.test(reward)) {
+            const val = parseInt(reward.replace(/[^0-9-]/g, '')) || 0;
+            Object.keys(party.characters).forEach(jobKey => {
+                const char = party.characters[jobKey];
+                if (/XP|경험치/i.test(reward)) {
+                    char.exp = (Number(char.exp) || 0) + (val * multiply);
+                } else {
+                    char.gold = (Number(char.gold) || 0) + (val * multiply);
+                }
+            });
+        }
+
+        // 3. 아이템 해금 (상점 추가)
+        if (reward.includes('해금')) {
+            if (!party.unlockedItems) party.unlockedItems = [1,2,3,4,5,6,7,8,9,10,11,12];
+            
+            const rangeMatch = reward.match(/(\d+)\s*[~-]\s*(\d+)/);
+            let targetItems = [];
+
+            if (rangeMatch) {
+                const start = parseInt(rangeMatch[1]);
+                const end = parseInt(rangeMatch[2]);
+                for (let i = start; i <= end; i++) targetItems.push(i);
+            } else {
+                const itemMatch = reward.match(/\d+/);
+                if (itemMatch) targetItems.push(parseInt(itemMatch[0]));
+            }
+
+            targetItems.forEach(itemNo => {
+                if (isAdding) {
+                    if (!party.unlockedItems.includes(itemNo)) party.unlockedItems.push(itemNo);
+                } else {
+                    party.unlockedItems = party.unlockedItems.filter(n => n !== itemNo);
+                }
+            });
+        }
+
+        // 4. [정밀 수정] 개별 아이템 지급/회수 및 자동 상점 해금/취소
+        if (reward.includes('#') && !reward.includes('해금')) {
+            const itemMatch = reward.match(/#(\d+)/);
+            if (itemMatch) {
+                const itemNo = parseInt(itemMatch[1]);
+                
+                if (isAdding) {
+                    // 지급 로직
+                    if (!party.unlockedItems) party.unlockedItems = [1,2,3,4,5,6,7,8,9,10,11,12];
+                    if (!party.unlockedItems.includes(itemNo)) {
+                        party.unlockedItems.push(itemNo);
+                        console.log(`🛒 아이템 #${itemNo} 상점 해금 완료`);
+                    }
+                    window.promptItemOwner(itemNo, id);
+                } else {
+                    // [추가] 회수 로직: 상점 해금 취소 및 모든 캐릭터 가방에서 삭제
+                    party.unlockedItems = (party.unlockedItems || []).filter(n => n !== itemNo);
+                    Object.keys(party.characters).forEach(jobKey => {
+                        const char = party.characters[jobKey];
+                        if (char.items) {
+                            char.items = char.items.filter(it => (typeof it === 'object' ? it.no : it) !== itemNo);
+                        }
+                    });
+                    // [추가] 배지 데이터 삭제 (Reward 항목 제거)
+                    if (sc.ts) {
+                        sc.ts = sc.ts.filter(t => String(t.id).toLowerCase() !== 'reward');
+                    }
+                    console.log(`♻️ 아이템 #${itemNo} 및 배지 회수 완료`);
+                }
+            }
+        }
+    });
+
+    // --- 실시간 UI 갱신 ---
+    const curJob = window.state.currentCharacter;
+    if (curJob && party.characters[curJob]) {
+        const c = party.characters[curJob];
+        if (typeof window.updateSheetUI === 'function') {
+            window.updateSheetUI(c.exp, c.lv, c.gold);
+        }
+        if (typeof window.renderPerks === 'function') {
+            window.renderPerks(curJob); 
+        }
+    }
+};
+window.promptItemOwner = function(itemNo, scId) {
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+    
+    // 활성 캐릭터 필터링
+    const activeChars = Object.keys(party.characters).filter(jobKey => {
+        const char = party.characters[jobKey];
+        return char.playerName && char.playerName.trim() !== "";
+    });
+
+    if (activeChars.length === 0) {
+        alert("아이템을 수령할 활성 캐릭터가 없습니다.");
+        return;
+    }
+
+    const modalHtml = `
+        <div id="modal-item-owner-picker" class="modal-global-alert active" 
+             style="display:flex; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000000;">
+            <div style="background:#1a1a1a; padding:25px; border-radius:12px; border:1px solid #d4af37; width:90%; max-width:350px; text-align:center;">
+                <h3 style="color:#d4af37; margin-bottom:20px; font-size:1.1rem;">🎁 시나리오 보상 아이템 #${itemNo.toString().padStart(2, '0')}<br>수령인을 선택하세요.</h3>
+                <div style="display:grid; grid-template-columns:1fr; gap:8px;">
+                    ${activeChars.map(name => `
+                        <button onclick="window.confirmItemGrant('${name}', ${itemNo}, '${scId}')" 
+                                class="badge-${name}" 
+                                style="padding:15px; border:none; border-radius:6px; color:white; font-weight:bold; cursor:pointer; font-size:1rem;">
+                            ${name} (${party.characters[name].playerName})
+                        </button>
+                    `).join('')}
+                </div>
+                <button onclick="document.getElementById('modal-item-owner-picker').remove();" 
+                        style="margin-top:20px; background:none; border:none; color:#888; text-decoration:underline; cursor:pointer;">
+                    나중에 결정
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+window.confirmItemGrant = async function(jobKey, itemNo, scId) {
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+    const char = party.characters[jobKey];
+    
+    if (!party.unlockedItems) party.unlockedItems = [1,2,3,4,5,6,7,8,9,10,11,12];
+    if (!party.unlockedItems.includes(itemNo)) {
+        party.unlockedItems.push(itemNo);
+    }
+
+    if (!char.items) char.items = [];
+    if (!char.items.includes(itemNo)) char.items.push(itemNo);
+
+    // [정밀 수정] 시나리오 배지 데이터 기록 (중복 방지 및 규격 통일)
+    if (scId && window.scenarioData[scId]) {
+        const sc = window.scenarioData[scId];
+        if (!sc.ts) sc.ts = [];
+        
+        // 기존 reward 데이터가 있다면 제거하여 깨끗한 상태로 만듦
+        sc.ts = sc.ts.filter(t => t && t.id && String(t.id).toLowerCase() !== 'reward');
+        
+        // 확실하게 'Reward'라는 ID로 데이터 삽입
+        sc.ts.push({ id: 'Reward', c: `아이템 #${itemNo}`, owner: jobKey });
+        console.log("🛠️ 현재 시나리오 데이터 상태:", sc.ts);
+        party.scenarioData = window.scenarioData;
+    }
+
+    try {
+        const partyRef = ref(db, `parties/${pName}`);
+        await set(partyRef, party);
+        
+        // [추가된 수정사항] 저장 성공 후 전역 시나리오 데이터를 파티 데이터와 동기화
+        if (party.scenarioData) window.scenarioData = party.scenarioData;
+        
+        if (window.state.currentCharacter === jobKey && typeof window.renderBag === 'function') {
+            window.renderBag(jobKey); 
+        }
+        window.renderScenarios();
+    } catch (e) {
+        console.error("아이템 저장 실패:", e);
+    }
+    
+    const modal = document.getElementById('modal-item-owner-picker');
+    if (modal) modal.remove();
+};
+/* ==========================================
+   [추가] 보물 상자 개별 보상 처리 함수
+   ========================================== */
+window.applyTreasureReward = function(jobKey, rewardText, isAdding) {
+    if (!jobKey || !rewardText || rewardText === '없음') return;
+
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+    const char = party?.characters[jobKey];
+    if (!char) return;
+
+    const multiplier = isAdding ? 1 : -1;
+
+    // 1. 골드 반영
+    if (rewardText.includes('G') || rewardText.includes('🪙') || /골드|gold/i.test(rewardText)) {
+        const val = parseInt(rewardText.replace(/[^0-9-]/g, '')) || 0;
+        char.gold = (Number(char.gold) || 0) + (val * multiplier);
+    }
+    
+    // 2. 경험치 반영
+    if (/XP|경험치/i.test(rewardText)) {
+        const val = parseInt(rewardText.replace(/[^0-9-]/g, '')) || 0;
+        char.exp = (Number(char.exp) || 0) + (val * multiplier);
+    }
+
+    // 3. 아이템 반영 (예: "#12" 형태의 아이템 번호)
+    if (rewardText.includes('#')) {
+        const itemNoMatch = rewardText.match(/#(\d+)/);
+        if (itemNoMatch) {
+            const itemNo = parseInt(itemNoMatch[1]);
+            if (!char.items) char.items = [];
+            if (isAdding) {
+                if (!char.items.includes(itemNo)) char.items.push(itemNo);
+            } else {
+                char.items = char.items.filter(it => it !== itemNo);
+            }
+        }
+    }
+
+    // 현재 상세 시트 주인공이라면 UI 즉시 갱신
+    if (window.state.currentCharacter === jobKey && typeof window.updateSheetUI === 'function') {
+        window.updateSheetUI(char.exp, char.lv, char.gold);
+    }
+};
+
+// 보물 소유자 변경 및 데이터 저장
+window.assignTreasure = async function(scId, tsIdx, newOwner) {
+    if (!window.scenarioData || !window.scenarioData[scId]) return;
+    
+    const sc = window.scenarioData[scId];
+    if (!sc.ts) sc.ts = [{ id: '?', c: sc.box || "보상 없음", owner: null }];
+    
+    const treasure = sc.ts[tsIdx];
+    const oldOwner = treasure.owner;
+    const rewardText = treasure.c;
+
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+    if (!party) return;
+
+    // [추가] 상점 해금 데이터 정밀 타격: 보물 내용물에 아이템(#)이 있다면 즉시 상점 해금
+    if (newOwner && rewardText.includes('#')) {
+        const itemMatch = rewardText.match(/#(\d+)/);
+        if (itemMatch) {
+            const itemNo = parseInt(itemMatch[1]);
+            if (!party.unlockedItems) party.unlockedItems = [1,2,3,4,5,6,7,8,9,10,11,12];
+            if (!party.unlockedItems.includes(itemNo)) {
+                party.unlockedItems.push(itemNo);
+                console.log(`🛒 보물상자 아이템 #${itemNo} 상점 해금 완료`);
+            }
+        }
+    }
+
+    // 1. 보상 가감 처리 (가방 지급 로직 포함)
+    if (oldOwner && oldOwner !== newOwner) {
+        if (typeof window.applyTreasureReward === 'function') {
+            window.applyTreasureReward(oldOwner, rewardText, false);
+        }
+    }
+    if (newOwner && newOwner !== oldOwner) {
+        if (typeof window.applyTreasureReward === 'function') {
+            window.applyTreasureReward(newOwner, rewardText, true);
+        }
+    }
+
+    // 2. 로컬 데이터 변경
+    treasure.owner = newOwner || null;
+
+    try {
+        // 3. 파티 객체 내의 시나리오 데이터 동기화
+        party.scenarioData = window.scenarioData;
+        
+        const partyRef = ref(db, `parties/${pName}`);
+        
+        // 4. Firebase 저장
+        await set(partyRef, party);
+        console.log(`✅ 시나리오 #${scId} 보물 소유자 변경 완료: ${newOwner || '미획득'}`);
+
+        // 5. UI 업데이트
+        if (typeof window.openTreasureManager === 'function') {
+            window.openTreasureManager(scId);
+        }
+        if (typeof window.renderScenarios === 'function') {
+            window.renderScenarios();
+        }
+    } catch (error) {
+        console.error("❌ 보물 저장 중 오류 발생:", error);
+        if (typeof window.showGlobalAlert === 'function') {
+            window.showGlobalAlert("데이터 저장에 실패했습니다.");
+        }
+    }
+};
+
+
+// 1. 보물 수령인 선택 커스텀 모달 (아이템 보상 디자인 계승)
+window.openTreasureOwnerPicker = function(scenarioId, idx, currentOwner, activeChars, party) {
+    const old = document.getElementById('modal-treasure-owner-picker');
+    if (old) old.remove();
+
+    const modalHtml = `
+        <div id="modal-treasure-owner-picker" class="modal-global-alert active" 
+             style="display:flex; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000001;">
+            <div style="background:#1a1a1a; padding:25px; border-radius:12px; border:1px solid #d4af37; width:90%; max-width:350px; text-align:center;">
+                <h3 style="color:#d4af37; margin-bottom:20px; font-size:1.1rem;">💎 보물 수령인 선택</h3>
+                <div style="display:grid; grid-template-columns:1fr; gap:8px;">
+                    <button onclick="window.assignTreasure('${scenarioId}', ${idx}, ''); document.getElementById('modal-treasure-owner-picker').remove(); window.openTreasureManager('${scenarioId}');" 
+                            style="padding:12px; border:1px solid #444; border-radius:6px; background:#333; color:#ccc; font-weight:bold; cursor:pointer; font-size:0.95rem;">
+                        미획득
+                    </button>
+                    ${activeChars.map(name => `
+                        <button onclick="window.assignTreasure('${scenarioId}', ${idx}, '${name}'); document.getElementById('modal-treasure-owner-picker').remove(); window.openTreasureManager('${scenarioId}');" 
+                                class="badge-${name}" 
+                                style="padding:12px; border:none; border-radius:6px; color:white; font-weight:bold; cursor:pointer; font-size:0.95rem; ${currentOwner === name ? 'outline:3px solid white;' : ''}">
+                            ${name} (${party.characters[name].playerName})
+                        </button>
+                    `).join('')}
+                </div>
+                <button onclick="document.getElementById('modal-treasure-owner-picker').remove();" 
+                        style="margin-top:20px; background:none; border:none; color:#888; text-decoration:underline; cursor:pointer;">
+                    취소
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+// 2. 메인 보물 관리자 함수 (아이콘 디자인 유지 및 선택 바 수정)
+window.openTreasureManager = function(scenarioId) {
+    const sc = window.scenarioData ? window.scenarioData[scenarioId] : null;
+    if (!sc) return;
+
+    if (!sc.ts || sc.ts.length === 0) {
+        if (sc.box && sc.box !== '없음') {
+            sc.ts = [{ id: '?', c: sc.box, owner: null }];
+        } else {
+            alert("이 시나리오에는 획득 가능한 보물이 없습니다.");
+            return;
+        }
+    }
+
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName] || {};
+    const activeChars = Object.keys(party.characters || {}).filter(name => 
+        party.characters[name].playerName && party.characters[name].playerName.trim() !== ""
+    );
+
+    const old = document.getElementById('modal-treasure-manager');
+    if (old) old.remove();
+
+    const modalHtml = `
+        <div id="modal-treasure-manager" class="modal-global-alert active" 
+             style="display:flex !important; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000000;">
+            <div class="modal-content" style="background:#1a1a1a; color:white; padding:25px; border-radius:12px; border:1px solid #d4af37; max-width:420px; width:90%; text-align:center;">
+                <h3 id="treasure-title" style="margin-top:0; color:#d4af37;">#${scenarioId.toString().padStart(2, '0')} 보물 기록</h3>
+                <div id="treasure-list" style="max-height:55vh; overflow-y:auto;">
+                    ${sc.ts.map((t, idx) => {
+                        const isAssigned = t.owner && t.owner !== "";
+                        return `
+                            <div class="treasure-item ${isAssigned ? 'assigned' : ''}" style="background:#222; padding:12px; border-radius:8px; margin:10px 0; border-left:4px solid ${isAssigned ? '#d4af37' : '#555'}; text-align:left;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                   <div style="font-size:0.75rem; font-weight:bold; color:${isAssigned ? '#d4af37' : '#888'}; transition: 0.2s;">#${t.id}</div>
+                                    ${isAssigned ? 
+                                        `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M4 12L10 15V22L4 19V12Z" fill="#5D2E0C"/>
+                                            <path d="M10 15L20 11V18L10 22V15Z" fill="#8B4513"/>
+                                            <path d="M6 11C6 9 10 7 13 7C17 7 20 9 20 11L10 14L6 11Z" fill="#FFD700"/>
+                                            <circle cx="9" cy="11" r="2" fill="#FACC15"/>
+                                            <circle cx="12" cy="10" r="2.5" fill="#FFD700"/>
+                                            <circle cx="15" cy="10" r="2" fill="#FACC15"/>
+                                            <circle cx="11" cy="12" r="2" fill="#FFD700"/>
+                                            <circle cx="14" cy="12" r="2" fill="#FACC15"/>
+                                            <path d="M4 12L3 7L12 1L13 6L4 12Z" fill="#A0522D" stroke="#5D2E0C" stroke-width="0.5"/>
+                                            <path d="M10 15L20 11" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+                                        </svg>` : 
+                                        `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M4 9L10 12V19L4 16V9Z" fill="#5D2E0C"/>
+                                            <path d="M10 12L20 8V15L10 19V12Z" fill="#8B4513"/>
+                                            <path d="M4 9L14 5L20 8L10 12L4 9Z" fill="#A0522D"/>
+                                            <path d="M10 12L20 8" stroke="#FFD700" stroke-width="1" opacity="0.4"/>
+                                            <path d="M13 9L15 10V13L13 12V9Z" fill="#FFD700" stroke="#5D2E0C" stroke-width="0.5"/>
+                                        </svg>`
+                                    }
+                                </div>
+                                <div style="font-size:0.95rem; margin:4px 0; font-weight:bold; color:${isAssigned ? '#d4af37' : '#ff4444'};">
+                                    ${isAssigned ? t.c : '???' }
+                                </div>
+
+                              <div onclick="window.openTreasureOwnerPicker('${scenarioId}', ${idx}, '${t.owner || ''}', ${JSON.stringify(activeChars).replace(/"/g, "'")}, ${JSON.stringify(party).replace(/"/g, "'")})" 
+     class="${isAssigned ? 'badge-' + t.owner : ''}"
+     style="width:24%; padding:8px 10px; border-radius:6px; cursor:pointer; text-align:center; font-size:0.85rem; font-weight:bold; transition: 0.2s;
+            ${isAssigned 
+                ? `border:none; color:white;` 
+                : `background:#333; color:#888; border:1px solid #444;`}">
+    ${isAssigned ? t.owner : '미획득'}
+</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <button onclick="document.getElementById('modal-treasure-manager').remove();" style="background:none; border:none; color:#666; text-decoration:underline; cursor:pointer; margin-top:15px;">닫기</button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+/* ==========================================
+   2. 시나리오 카드 렌더링 (UI 최적화)
+   ========================================== */
+window.renderScenarios = function() {
+    const grid = document.getElementById('scenario-grid');
+    if (!grid || !window.scenarioData) return;
+
+    try {
+        const html = Object.entries(window.scenarioData).map(([id, sr]) => {
+            if (!sr) return ''; 
+
+            const status = sr.st || "locked"; 
+            const isDone = status === "completed";
+            const isLocked = (status === "locked") || (sr.isBlocked === true); 
+            const displayId = id.toString().padStart(2, '0');
+            
+            const treasures = sr.ts || [];
+            
+            // --- 보물상자 필터링 로직 (기본 로직 유지 + 안전한 비교 추가) ---
+            const realTreasures = treasures.filter(t => t && t.id && String(t.id).toLowerCase() !== 'reward');
+            const hasTreasure = (sr.box && sr.box !== '없음') || realTreasures.length > 0;
+            const hasUnclaimed = realTreasures.some(t => !t.owner || t.owner === "");
+            
+            // 소유자 배지 정보 (Reward 매칭 및 대소문자 무시 안전 처리)
+            const rewardOwners = treasures.filter(t => t && t.id && String(t.id).toLowerCase() === 'reward' && t.owner).map(t => t.owner);
+            const boxOwners = [...new Set(realTreasures.filter(t => t.owner).map(t => t.owner))];
+
+            return `
+                <div class="sr-card ${isLocked ? 'locked' : ''} ${isDone ? 'completed' : ''}" 
+                     onclick="${isLocked ? '' : `window.toggleScenarioStatus('${id}')`}"
+                     style="position: relative;">
+                    
+                    <div class="sr-info-zone">
+                        <div class="sr-title-row">
+                            <span class="sr-no">#${displayId}</span>
+                            <span class="sr-title">${sr.t || '알 수 없는 시나리오'}</span>
+                        </div>
+                        
+                        <div class="sr-reward-preview ${isDone ? 'show-reward' : 'hide-reward'}" style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; white-space: normal; word-break: keep-all; line-height: 1.4;">
+                            <span style="flex-basis: 100%; margin-bottom: 2px;">🎁 보상: ${sr.rw || '없음'}</span>
+                            ${rewardOwners && rewardOwners.length > 0 
+                                ? rewardOwners.map(owner => `<span class="badge-job badge-${owner}">${owner.substring(0, 2)}</span>`).join('') 
+                                : ''}
+                        </div>
+                    </div>
+
+                    <div class="sr-status-zone">
+                        ${!isLocked ? `
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                ${hasTreasure ? `
+                                    <div style="display: flex; align-items: center; position: relative; z-index: 200;">
+                                        <div class="sr-owners-badges" style="display: flex; gap: 2px; margin-right: 5px;">
+                                            ${boxOwners.map(owner => {
+                                                const shortName = owner.substring(0, 2);
+                                                return `<span class="badge-job badge-${owner}">${shortName}</span>`;
+                                            }).join('')}
+                                        </div>
+                                        <button class="sr-btn-treasure" 
+                                                onclick="event.preventDefault(); event.stopPropagation(); window.openTreasureManager('${id}');"
+                                                style="background:none; border:none; cursor:pointer; padding:2px; display:flex; align-items:center; justify-content:center; position:relative;">
+                                            
+                                            ${hasUnclaimed ? 
+                                                // 미획득 보물 있음: 닫힌 입체 상자 (기존 SVG 유지)
+                                                `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M4 9L10 12V19L4 16V9Z" fill="#5D2E0C"/>
+                                                    <path d="M10 12L20 8V15L10 19V12Z" fill="#8B4513"/>
+                                                    <path d="M4 9L14 5L20 8L10 12L4 9Z" fill="#A0522D"/>
+                                                    <path d="M10 12L20 8" stroke="#FFD700" stroke-width="1" opacity="0.4"/>
+                                                    <path d="M13 9L15 10V13L13 12V9Z" fill="#FFD700" stroke="#5D2E0C" stroke-width="0.5"/>
+                                                </svg>`
+                                                : 
+                                                // 모두 획득함: 열린 입체 상자 (기존 SVG 유지)
+                                                `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M4 12L10 15V22L4 19V12Z" fill="#5D2E0C"/>
+                                                    <path d="M10 15L20 11V18L10 22V15Z" fill="#8B4513"/>
+                                                    <path d="M6 11C6 9 10 7 13 7C17 7 20 9 20 11L10 14L6 11Z" fill="#FFD700"/>
+                                                    <circle cx="9" cy="11" r="2" fill="#FACC15"/><circle cx="12" cy="10" r="2.5" fill="#FFD700"/><circle cx="15" cy="10" r="2" fill="#FACC15"/>
+                                                    <path d="M4 12L3 7L12 1L13 6L4 12Z" fill="#A0522D" stroke="#5D2E0C" stroke-width="0.5"/>
+                                                    <path d="M10 15L20 11" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+                                                </svg>`
+                                            }
+                                        </button>
+                                    </div>
+                                ` : ''}
+                                <span class="sr-badge ${isDone ? 'done' : 'ready'}">
+                                    ${isDone ? '완료' : '가능'}
+                                </span>
+                            </div>
+                        ` : '<span class="sr-lock-icon">🔒</span>'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        grid.innerHTML = html || '<div style="color:white; text-align:center; padding:50px;">표시할 시나리오가 없습니다.</div>';
+    } catch (err) {
+        console.error("❌ renderScenarios 오류:", err);
+    }
+};
+/* ==========================================
+   3. 시나리오 상태 토글 및 해금 로직
+   ========================================== */
+window.toggleScenarioStatus = async function(id) {
+    if (!window.scenarioData || !window.scenarioData[id] || window.isToggling) return;
+    window.isToggling = true;
+
+    const sc = window.scenarioData[id];
+
+    // [정밀 타격] 수동 해금 등으로 이미 'ready' 상태라면, 혹시 남아있을지 모를 isBlocked를 해제해 줍니다.
+    if (sc.st === 'ready' || sc.st === 'unlocked') {
+        sc.isBlocked = false;
+    }
+
+    // 여전히 강제로 차단된 상태(isBlocked: true)라면 중단
+    if (sc.isBlocked) { 
+        window.isToggling = false; 
+        return; 
+    }
+
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+
+    // 상태 순환 로직
+    if (sc.st === 'locked') {
+        sc.st = 'ready'; 
+    } else if (sc.st === 'ready' || sc.st === 'unlocked') {
+        sc.st = 'completed';
+        // 이 시점에서 21~25 범위 해금 등 보상이 정상 처리됩니다.
+        window.applyScenarioRewards(id, true); 
+        window.unlockNextScenarios(id); 
+    } else if (sc.st === 'completed') {
+        sc.st = 'ready';
+        window.applyScenarioRewards(id, false);
+        
+        // 잠금 해제 로직 (lks 복구)
+        if (sc.lks) sc.lks.forEach(lid => {
+            const t = window.scenarioData[lid];
+            if (t && t.isBlocked) { t.isBlocked = false; t.st = 'locked'; }
+        });
+    }
+
+    // UI 업데이트
+    window.renderScenarios();
+
+    // Firebase 저장
+    try {
+        if (party && pName) {
+            party.scenarioData = window.scenarioData;
+            const partyRef = ref(db, `parties/${pName}`);
+            await set(partyRef, party);
+        }
+    } catch (e) {
+        console.error("❌ 저장 실패:", e);
+    } finally {
+        setTimeout(() => { window.isToggling = false; }, 300);
+    }
+};
+
+// 다음 시나리오 해금/차단 처리
+window.unlockNextScenarios = function(currentId) {
+    const sc = window.scenarioData[currentId];
+    if (!sc) return;
+
+    // 1. nxt (해금)
+    if (sc.nxt) {
+        sc.nxt.forEach(nid => {
+            const target = window.scenarioData[nid];
+            if (target && target.st === 'locked' && !target.isBlocked) {
+                target.st = 'ready';
+            }
+        });
+    }
+    // 2. lks (상호 배타적 잠금)
+    if (sc.lks) {
+        sc.lks.forEach(lid => {
+            const target = window.scenarioData[lid];
+            if (target && target.st !== 'completed') {
+                target.st = 'locked';
+                target.isBlocked = true;
+            }
+        });
+    }
+};
+
+
+window.handleManualScenarioToggle = function() {
+    const input = document.getElementById('manual-sr-id');
+    if (!input) return;
+    
+    const srId = input.value.trim();
+
+    // 공통 알림창 제어 함수 (기존 유지)
+    const showAlert = (msg) => {
+        const alertModal = document.getElementById('modal-global-alert');
+        const alertMsg = document.getElementById('alert-message');
+        if (alertModal && alertMsg) {
+            alertMsg.innerText = msg;
+            alertModal.classList.remove('hidden');
+        } else {
+            alert(msg);
+        }
+    };
+
+    // 1. 유효성 검사 (기존 유지)
+    if (!srId || !window.scenarioData || !window.scenarioData[srId]) {
+        showAlert("존재하지 않는 시나리오 번호입니다.");
+        input.value = '';
+        input.focus();
+        return;
+    }
+
+    const sr = window.scenarioData[srId];
+
+    // 2. 완료 상태 체크 (기존 유지)
+    if (sr.st === 'completed') {
+        showAlert(`#${srId} 시나리오는 이미 완료하여 상태를 변경할 수 없습니다.`);
+        input.value = '';
+        return;
+    }
+
+    // 3. 상태 토글 로직 [정밀 타격: 시스템 표준 ready로 수정]
+    if (sr.st === 'locked' || sr.isBlocked === true) {
+        sr.st = 'ready'; // active 대신 ready로 변경하여 클리어 로직과 호환되게 함
+        sr.isBlocked = false;
+    } else {
+        sr.st = 'locked'; 
+        sr.isBlocked = true;
+    }
+
+    // 4. [정밀 타격] 파이어베이스 직접 저장 (사용자 기존 방식 복구)
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    if (pName) {
+        try {
+            // 상단에 선언된 전역 변수 db, ref, update를 직접 사용
+            const partyRef = ref(db, `parties/${pName}`);
+            update(partyRef, { scenarioData: window.scenarioData })
+                .then(() => console.log(`✅ #${srId} 시나리오 서버 저장 성공`))
+                .catch(err => console.error("❌ 시나리오 저장 실패:", err));
+        } catch (err) {
+            console.error("❌ Firebase 참조 오류:", err);
+        }
+    }
+
+    if (typeof window.renderScenarios === 'function') {
+        window.renderScenarios();
+    }
+    
+    // 5. 마무리 (기존 유지)
+    input.value = '';
+    input.focus();
+};
+
+// 4. 시나리오 모드 팝업 열기 (메인 진입점)
+window.openScenarioMode = function() {
+    const popup = document.getElementById('popup-scenario');
+    if (!popup) return;
+
+    // 강제 가시화 및 활성화
+    popup.style.display = 'flex'; 
+    popup.classList.add('active');
+
+    // 데이터 무결성 체크 (파티 데이터에서 로드)
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+    
+    if (party && party.scenarioData) {
+        window.scenarioData = JSON.parse(JSON.stringify(party.scenarioData));
+    } else if (!window.scenarioData) {
+        // 데이터가 아예 없으면 템플릿에서 복사
+        window.scenarioData = JSON.parse(JSON.stringify(window.SCENARIO_TEMPLATE || {}));
+    }
+
+    // 화면 렌더링 호출
+    if (typeof window.renderScenarios === 'function') {
+        window.renderScenarios();
+    }
+};
+
+// 5. 시나리오 모드 및 모든 관련 모달 닫기
+window.closeScenarioMode = function() {
+    const popup = document.getElementById('popup-scenario');
+    if (popup) {
+        popup.classList.remove('active');
+        popup.style.display = 'none';
+    }
+    
+    // 보물 관리 모달이 열려있다면 함께 닫기
+    const tm = document.getElementById('modal-treasure-manager');
+    if (tm) {
+        tm.remove(); // 이 모달은 동적으로 생성하므로 삭제하는 것이 깔끔합니다.
+    }
+};
+
+// 6. 공통 모달 닫기 대응 (기존 가이드 준수)
+window.closeModal = function(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+        modal.classList.add('hidden');
+    }
+};
+
+
+window.saveCityEventData = async function() {
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+    
+    // 저장할 데이터가 있는지 확인
+    if (pName && party && party.cityEvents) {
+        try {
+            // 사용자님의 Firebase 구조인 parties/파티이름/cityEvents 경로에 직접 저장
+            const cityEventRef = ref(db, `parties/${pName}/cityEvents`);
+            await set(cityEventRef, party.cityEvents); 
+            
+            console.log(`✅ [DB 저장 성공] '${pName}' 파티의 도시 이벤트가 동기화되었습니다.`);
+        } catch (e) {
+            console.error("❌ [DB 저장 실패] Firebase 전송 중 오류 발생:", e);
+        }
+    } else {
+        console.warn("⚠️ [저장 중단] 저장할 파티 이름이나 데이터가 없습니다.");
+    }
+};
+
+// 1. 도시 이벤트 모드 열기
+window.openCityEventMode = function() {
+    const popup = document.getElementById('ce-popup');
+    if (!popup) return;
+
+    // 시나리오 방식: 스타일 강제 부여 및 active 클래스 추가
+    popup.style.display = 'flex'; 
+    popup.classList.add('active');
+
+    // 캐릭터 시트 숨기기
+    const charSheet = document.getElementById('modal-char-sheet');
+    if (charSheet) charSheet.style.display = 'none';
+
+    // 데이터 렌더링 호출
+    if (typeof window.renderCityEvent === 'function') {
+        window.renderCityEvent();
+    }
+};
+
+// 2. 도시 이벤트 모드 닫기 (캐릭터 시트로 복귀)
+window.closeCityEventMode = function() {
+    const popup = document.getElementById('ce-popup');
+    if (popup) {
+        // 시나리오 방식: active 제거 및 스타일 none 강제
+        popup.classList.remove('active');
+        popup.style.display = 'none';
+    }
+
+    // 캐릭터 시트 다시 가시화
+    const charSheet = document.getElementById('modal-char-sheet');
+    if (charSheet) {
+        charSheet.style.display = 'flex'; // 또는 원래 시트의 display 방식에 맞춰 'block'
+    }
+};
+
+window.initCityEventData = function() {
+    const pName = window.state.currentPartyName || window.state.homeSelectedParty;
+    const party = window.state.parties[pName];
+    
+    if (!party) return null;
+
+    let isModified = false; 
+
+    // 1. 데이터가 아예 없는 경우 초기화
+    if (!party.cityEvents) {
+        party.cityEvents = { 
+            deck: [1, 2, 3, 4, 5, 6, 7, 8], 
+            discard: [], 
+            logs: [] 
+        };
+        isModified = true;
+    }
+    
+    // 2. 로그 배열 누락 방지
+    if (!party.cityEvents.logs) {
+        party.cityEvents.logs = [];
+        isModified = true;
+    }
+
+    // 3. 22번 초과 데이터 필터링
+    const originalDeckLen = party.cityEvents.deck.length;
+    const originalDiscardLen = (party.cityEvents.discard || []).length;
+
+    party.cityEvents.deck = (party.cityEvents.deck || []).filter(n => n <= 22);
+    party.cityEvents.discard = (party.cityEvents.discard || []).filter(n => n <= 22);
+
+    if (originalDeckLen !== party.cityEvents.deck.length || originalDiscardLen !== party.cityEvents.discard.length) {
+        isModified = true;
+    }
+
+    // 4. [정밀 타격] 변경 사항이 있다면 Firebase 서버에 저장
+    if (isModified && typeof window.saveCityEventData === 'function') {
+        window.saveCityEventData();
+    }
+
+    return party.cityEvents;
+};
+
+// 2. 화면 렌더링 (배지 그리기)
+window.renderCityEvent = function() {
+    const data = window.initCityEventData();
+    if (!data) return;
+
+    const { deck, discard, logs } = data;
+    const allIds = Array.from({ length: 22 }, (_, i) => i + 1);
+
+    // 잠긴 덱 계산: 전체에서 덱과 소멸덱을 제외한 나머지
+    const locked = allIds.filter(id => !deck.includes(id) && !discard.includes(id));
+
+    // 배지 생성 헬퍼 함수
+    const createBadges = (list, typeClass) => {
+        return list.sort((a, b) => a - b).map(id => `
+            <span class="ce-card-badge ${typeClass}" 
+                  onclick="document.getElementById('ce-input-id').value='${id}'">
+                ${id}
+            </span>
+        `).join('') || '<span style="color:#444; font-size:0.75rem;">없음</span>';
+    };
+
+    // 각 섹션에 배지 투입
+    document.getElementById('ce-deck-numbers').innerHTML = createBadges(deck, 'ce-card-active');
+    document.getElementById('ce-removed-numbers').innerHTML = createBadges(discard, 'ce-card-removed');
+    document.getElementById('ce-locked-numbers').innerHTML = createBadges(locked, 'ce-card-locked');
+
+    // 카운트 업데이트
+    document.getElementById('ce-count-active').innerText = deck.length;
+    document.getElementById('ce-count-removed').innerText = discard.length;
+    document.getElementById('ce-count-locked').innerText = locked.length;
+
+    // 로그 렌더링 함수 호출
+    window.renderCityEventLogs(logs);
+};
+
+/**
+ * 도시 이벤트 통합 제어 (해금/소멸/복귀) - 정밀 타격 수정본
+ */
+window.handleCityEvent = async function(actionType) { // async 추가
+    const idInput = document.getElementById('ce-input-id');
+    const noteInput = document.getElementById('ce-input-note');
+    if (!idInput || !noteInput) return;
+
+    const id = parseInt(idInput.value);
+    const note = noteInput.value.trim();
+
+    // 1. 유효성 검사
+    if (isNaN(id) || id < 1 || id > 22) {
+        const msgElem = document.getElementById('alert-message');
+        if (msgElem) msgElem.innerText = "1번부터 22번 사이의 카드 번호를 입력해주세요.";
+        window.openModal('modal-global-alert');
+        idInput.value = '';
+        idInput.focus();
+        return;
+    }
+
+    const data = window.initCityEventData(); 
+    if (!data) return;
+
+    let actionName = "";
+    let statusText = "";
+
+    // 2. 액션 타입별 로직 처리 (기존 로직 유지)
+    if (actionType === 'toggle') {
+        const idx = data.deck.indexOf(id);
+        if (idx > -1) {
+            data.deck.splice(idx, 1);
+            actionName = "잠금";
+            statusText = "덱에서 제거됨";
+        } else {
+            const disIdx = data.discard.indexOf(id);
+            if (disIdx > -1) data.discard.splice(disIdx, 1);
+            data.deck.push(id);
+            actionName = "해금";
+            statusText = "덱에 추가됨";
+        }
+    } 
+    else if (actionType === 'remove') {
+        const idx = data.deck.indexOf(id);
+        if (idx > -1) data.deck.splice(idx, 1);
+        if (!data.discard.includes(id)) data.discard.push(id);
+        actionName = "소멸";
+        statusText = "영구 소멸됨";
+    } 
+    else if (actionType === 'bottom') {
+        const idx = data.deck.indexOf(id);
+        if (idx > -1) data.deck.splice(idx, 1);
+        const disIdx = data.discard.indexOf(id);
+        if (disIdx > -1) data.discard.splice(disIdx, 1);
+        data.deck.push(id);
+        actionName = "복귀";
+        statusText = "덱 맨 아래로 이동";
+    }
+
+    // 3. 로그 기록 (최신순)
+    const newLog = {
+        id: id,
+        type: actionName,
+        note: note || statusText,
+        date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    data.logs.unshift(newLog);
+    if (data.logs.length > 20) data.logs.pop();
+
+    // 4. [정밀 타격] Firebase 서버 저장 및 화면 갱신
+    if (typeof window.saveCityEventData === 'function') {
+        await window.saveCityEventData(); // 서버로 데이터 전송
+    }
+
+    window.renderCityEvent(); 
+    
+    // 5. 입력창 초기화
+    idInput.value = "";
+    noteInput.value = "";
+    idInput.focus();
+};
+
+/**
+ * 로그 목록 펼치기/접기 토글
+ */
+window.toggleCityEventLogs = function() {
+    const container = document.getElementById('ce-log-container');
+    const icon = document.getElementById('ce-log-toggle-icon');
+    if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        icon.innerText = '▲';
+    } else {
+        container.classList.add('hidden');
+        icon.innerText = '▼';
+    }
+};
+
+window.deleteCityEventLog = function(index) {
+    const msgElem = document.getElementById('confirm-message');
+    const actionBtn = document.getElementById('confirm-action-btn');
+
+    if (msgElem && actionBtn) {
+        msgElem.innerText = "이 기록을 삭제하시겠습니까?";
+
+        actionBtn.onclick = async function() { // async 추가
+            const data = window.initCityEventData();
+            if (data && data.logs) {
+                data.logs.splice(index, 1);
+                
+                // [정밀 타격] 서버 저장 함수로 교체
+                if (typeof window.saveCityEventData === 'function') {
+                    await window.saveCityEventData();
+                }
+                
+                window.renderCityEvent();
+            }
+            window.closeModal('modal-global-confirm');
+        };
+
+        window.openModal('modal-global-confirm');
+    }
+};
+
+window.clearCityEventLogs = function() {
+    const msgElem = document.getElementById('confirm-message');
+    const actionBtn = document.getElementById('confirm-action-btn');
+
+    if (msgElem && actionBtn) {
+        msgElem.innerText = "모든 이벤트 기록을 삭제하시겠습니까?";
+        
+        actionBtn.onclick = async function() { // async 추가
+            const data = window.initCityEventData();
+            if (data) {
+                data.logs = [];
+                
+                // [정밀 타격] 서버 저장 함수로 교체
+                if (typeof window.saveCityEventData === 'function') {
+                    await window.saveCityEventData();
+                }
+                
+                window.renderCityEvent();
+            }
+            window.closeModal('modal-global-confirm');
+        };
+
+        window.openModal('modal-global-confirm');
+    }
+};
+
+/**
+ * 로그 렌더링 (줄바꿈 허용 및 요약 띄우기 반영)
+ */
+window.renderCityEventLogs = function(logs) {
+    const container = document.getElementById('ce-log-container');
+    const summary = document.getElementById('ce-log-summary');
+    if (!container || !summary) return;
+
+    if (!logs || logs.length === 0) {
+        summary.innerHTML = '📜 최근 기록: 없음';
+        container.innerHTML = '<div style="color:#444; text-align:center; padding:15px; font-size:0.75rem;">기록이 없습니다.</div>';
+        return;
+    }
+
+    // 1. 최상단 요약 업데이트: 4칸 띄우기 및 초록색 글씨 적용
+    const latest = logs[0];
+    const space = "&nbsp;&nbsp;&nbsp;&nbsp;"; 
+    summary.innerHTML = `📜 최근 기록${space}<b style="color:#2ecc71;">#${latest.id} ${latest.note || latest.type}</b>`;
+
+    // 2. 개별 로그 카드 렌더링
+    container.innerHTML = logs.map((log, index) => `
+        <div class="ce-log-card" style="font-size: 0.8rem; margin-bottom: 8px; padding: 12px; border-left: 3px solid ${log.type === '소멸' ? '#c0392b' : 'var(--accent)'}; background: #222; border-radius: 6px; position: relative; height: auto;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; align-items: center;">
+                <b style="color: ${log.type === '소멸' ? '#ff6b6b' : '#ffd700'};">#${log.id} ${log.type}</b>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="color: #666; font-size: 0.7rem;">${log.date}</span>
+                    <span onclick="event.stopPropagation(); window.deleteCityEventLog(${index})" 
+                          style="background:#c0392b; color:white; padding:2px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer; font-weight:bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">삭제</span>
+                </div>
+            </div>
+            <div style="color: #bbb; line-height:1.5; word-break: break-all; white-space: normal;">${log.note}</div>
+        </div>
+    `).join('');
+};
+
+
+
+</script>
+</body>
+</html>
